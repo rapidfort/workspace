@@ -12,7 +12,7 @@ init() {
     apt update
 
     # Install OS dependencies
-    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim -y
+    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
 
     # Install go
     if ! command -v go; then
@@ -77,14 +77,37 @@ init() {
         source $HOME/.git-prompt.sh
     fi
 
-    # pull code
-
     # Setup local container registry
+    if ! docker ps | grep registry ; then
+        registry-setup.sh
+    fi
+
+    mkdir -p /root/{rapidfort,funct}
+
+    # pull code
+    rfsrc
+
+    # Setup RapidFort
+    [ ! -s /root/rapidfort/RF_BASE ] && echo ubi8 > /root/rapidfort/RF_BASE
+    [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ] && echo 1 > /root/rapidfort/RF_PARALLEL_BUILD
+    [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ] && echo docker > /root/rapidfort/RF_CONTAINER_ENGINE
 
     # Launch Cluster
+    if [[ $(kind cluster get) =~ "rapidfort" ]] then
+        echo $(kind cluster get)
+    else
+        (cd /root/rapidfort/rapidfort-platform/ && ./play.sh init)
+    fi
 
     # Deploy application
+    echo "Update user-data inside /root/rapidfort/rapidfort-platform/override-user.yaml"
+    echo "Then run: rfbuild"
+    echo "Then run: ./play.sh start"
 
+    # Deploy Prodmon
+    echo "cd /root/rapidfort/k8s-rf-monitor"
+    echo "./build.sh build"
+    echo "./tests/elk_demo_setup.sh"
 }
 
 init
