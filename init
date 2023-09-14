@@ -77,11 +77,6 @@ init() {
         source $HOME/.git-prompt.sh
     fi
 
-    # Setup local container registry
-    if ! docker ps | grep registry ; then
-        registry-setup.sh
-    fi
-
     mkdir -p /root/{rapidfort,funct}
 
     # pull code
@@ -97,6 +92,11 @@ init() {
         echo $(kind cluster get)
     else
         (cd /root/rapidfort/rapidfort-platform/ && ./play.sh init)
+    fi
+
+    # Setup local container registry
+    if ! docker ps | grep registry ; then
+        registry-setup.sh
     fi
 
     # Deploy application
