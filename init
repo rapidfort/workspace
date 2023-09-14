@@ -40,8 +40,10 @@ init() {
     fi
 
     # install docker
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
+    if ! command -v docekr; then
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sh get-docker.sh
+    fi
 
     # install kind
     if ! command -v kind; then
