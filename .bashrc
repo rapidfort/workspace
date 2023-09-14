@@ -83,10 +83,14 @@ else
     export KCONTEXT=
 fi
 
-if test -s $HOME/.git-prompt.sh ; then
-    curl -Lo $HOME/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
-    source $HOME/.git-prompt.sh
+if test -z "$HOME" ; then
+    export HOME=/root
 fi
+
+if test ! -s $HOME/.git-prompt.sh ; then
+    curl -Lo $HOME/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+fi
+source $HOME/.git-prompt.sh
 
 if [ "$TERM" = "dumb" ] ; then
      PS1="> "
@@ -104,10 +108,6 @@ export HISTFILESIZE=
 
 # MEF: So that screen window names dont revert
 unset PROMPT_COMMAND
-
-if test -z "$HOME" ; then
-    export HOME=/root
-fi
 
 export TERM=xterm-256color
 export PATH=$PATH:/usr/local/bin:/usr/local/go/bin:/opt/rapidfort/common:$HOME/.local/bin:/usr/local/musl/bin

@@ -12,7 +12,7 @@ init() {
     apt update
 
     # Install OS dependencies
-    apt install curl wget python3-pip unzip parallel -y
+    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim -y
 
     # Install go
     if ! command -v go; then
@@ -22,6 +22,13 @@ init() {
     fi
 
     # install tools (helm, kubectl)
+    if ! command -v aws; then
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        ./aws/install
+        rm -rf awscliv2.zip aws
+    fi
+
     if ! command -v kubectl; then
         curl -Lo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
         chmod +x /usr/local/bin/kubectl
