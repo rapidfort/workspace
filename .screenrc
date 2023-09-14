@@ -1,0 +1,89 @@
+# Allow bold colors - necessary for some reason
+attrcolor b ".I"
+term screen-256color
+
+## prevents screen from stealing control-s
+defflow off
+
+# Make screen messages stand out a little more - black on bright green.
+sorendition "+b kG"
+
+## mouse scroll wheel
+termcapinfo xterm* ti@:te@
+
+# backspace key
+# bindkey -d -k kb stuff \010
+
+multiuser on
+acladd nobody
+defscrollback 8192
+
+# Escape key is C-o.  (I use C-a too much in Emacs.)
+escape ^Oo
+defescape ^Oo
+
+bindkey "^[OP" screen                   # F1: create a new window
+bindkey "^[OQ" title                    # F2: change title of selected window
+bindkey "^[OR" eval 'prev' 'fit'        # F3: previous window from current window
+bindkey "^[OS" eval 'next' 'fit'        # F4: next window from current window
+bindkey "^[[15;2~" focus up             # SHIFT-F5: split window horizontally & focus
+bindkey "^[[15;5~" only                 # CTRL-F5: remove selected split
+bindkey "^[[15~" eval 'split' 'focus down' 'next' 'focus up' 'screen' # F5: split window horizontally & focus
+bindkey "^[[17~" select                 # F6: prompt for window selection
+bindkey "^[[18~" copy                   # F7: scrollmode
+
+hardstatus on
+hardstatus alwayslastline
+hardstatus string "%w"
+
+shell /bin/bash
+
+############################################
+## default screens
+
+# If a window goes unresponsive, don't block the whole session waiting for it.
+nonblock on
+
+screen -t agg bash -c "cd /root/rapidfort/aggregator && exec bash"
+screen -t log-agg bash -c "module_log aggregator"
+
+screen -t bac bash -c "cd /root/rapidfort/backend && exec bash"
+screen -t log-bac bash -c "module_log backend"
+
+screen -t fil bash -c "cd /root/rapidfort/fileupload && exec bash"
+screen -t log-fil bash -c "module_log fileupload"
+
+screen -t fro bash -c "cd /root/rapidfort/frontrow && exec bash"
+screen -t log-fro bash -c "module_log frontrow"
+
+screen -t iso bash -c "cd /root/rapidfort/iso-master && exec bash"
+screen -t log-iso bash -c "module_log isomaster"
+
+screen -t rfa bash -c "cd /root/rapidfort/rfapi && exec bash"
+screen -t log-rfa bash -c "module_log rfapi"
+
+screen -t rfp bash -c "cd /root/rapidfort/rfpubsub && exec bash"
+screen -t log-rfp bash -c "module_log rfpubsub"
+
+screen -t vul bash -c "cd /root/rapidfort/vulns-db && exec bash"
+screen -t log-vul bash -c "module_log vulnsdb"
+
+screen -t rfs bash -c "cd /root/rapidfort/iso-master && exec bash"
+screen -t log-rfs bash -c "module_log rfscan"
+
+screen -t run bash -c "cd /root/rapidfort/runner && exec bash"
+screen -t log-run bash -c "module_log runner"
+
+screen -t log-key bash -c "module_log keycloak"
+
+screen -t k8s bash -c "cd /root/rapidfort/k8s-rf-monitor && exec bash"
+screen -t sta bash -c "cd /root/rapidfort/standalone && exec bash"
+screen -t pac bash -c "cd /root/rapidfort/package-analyzer && exec bash"
+screen -t cli bash -c "cd /root/rapidfort/rapidfort && exec bash"
+screen -t com bash -c "cd /root/rapidfort/common && exec bash"
+screen -t fun bash -c "cd /root/rapidfort/functional-tests && exec bash"
+
+screen -t platform bash -c "cd /root/rapidfort/rapidfort-platform && exec bash"
+screen -t test bash -c "cd /opt/rapidfort && exec bash"
+screen -t build bash -c "cd /root/rapidfort && exec bash"
+screen -t log-bui bash -c "cd /root/funct && tail -F /root/funct/parallel_build/* && exec bash"
