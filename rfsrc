@@ -1,0 +1,104 @@
+#!/bin/bash
+
+if test -z "${RF_REPO_ROOT}"; then
+    echo "set RF_REPO_ROOT"
+    echo export RF_REPO_ROOT="<Your REPO ROOT>"
+    echo exiting..
+    exit 1
+fi
+
+mkdir -p "$HOME"/rapidfort/network
+
+# Add new repos here with space as seprator
+repos="aggregator \
+backend \
+bpf \
+cloudvm-common \
+cloudvm-orchestrator \
+cloudvm-scanner \
+common \
+file_access \
+fileupload \
+frontrow \
+functional-tests \
+infrastructure \
+integrations \
+iso-master \
+k8s-rf-monitor \
+network/arpoke \
+network/bindfs-mapname \
+network/iflist \
+network/pkt_analyzer \
+network/rftunnel \
+network/rsock \
+network/sniffer \
+package-analyzer \
+rapidfort \
+rapidfort-platform \
+rapidrisk \
+rfapi \
+rfpubsub \
+rftrace \
+rfvdb \
+rollout \
+runner \
+standalone \
+strace \
+vulns-db"
+
+my_prog="$0"
+my_prog_args=("$@")
+my_prog_path=$(realpath "$0")
+my_prog_name=$(basename "$my_prog_path")
+my_prog_dir=$(dirname "$my_prog_path")
+
+techo() {
+    # Usage: techo MSG
+    #
+    # Timestamped echo
+    local msg="$*"
+    local nl=""
+    local ts
+
+    ts="$(date +"%Y-%m-%d %T,%3N")"
+    echo -e "${nl}${ts} ${my_prog_name}: $msg"
+}
+
+export -f techo
+if test -n "${FAST}"; then
+    export DEPTH="--depth 1"
+else
+    export DEPTH=
+fi
+
+repo_pull_clone() {
+    pushd "${HOME}"/rapidfort >/dev/null
+    repo=$1
+    techo '-->'$repo;
+    if test -d $repo; then
+        # stash local changes
+        # fetch all remote branches
+        # checkout staging
+        # pull all
+        (cd $repo && git stash && git checkout staging && git pull $DEPTH)
+    else
+        if [[ "$repo" == *"network/"* ]] ; then
+            (cd network && git clone $DEPTH --branch staging ${RF_REPO_ROOT}/$(basename $repo))
+        else
+            git clone $DEPTH --branch staging ${RF_REPO_ROOT}/$repo
+        fi
+    fi
+    techo '<--'$repo;
+    popd >/dev/null
+}
+
+if true; then
+    export -f repo_pull_clone
+    parallel --lb -k -j 8 repo_pull_clone ::: ${repos[*]}
+else
+    echo "-->S<--"
+    for repo in $repos; do
+        repo_pull_clone $repo
+    done
+fi
+
