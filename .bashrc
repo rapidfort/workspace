@@ -52,7 +52,7 @@ if test -s ~/my_ip_address.txt ; then
     cp -vf ~/my_ip_address.txt /tmp/my_ip_address.txt
 elif test -s /opt/rapidfort/.rf_app_host ; then
     cp -vf /opt/rapidfort/.rf_app_host /tmp/my_ip_address.txt
-elif cat /proc/net/dev | grep -Eo '^[^:]+' | grep tailscale0; then
+elif cat /proc/net/dev | grep -Eo '^[^:]+' | grep -q tailscale0; then
     echo $(tailscale ip -4) > /tmp/my_ip_address.txt
 else
     netif=$(ip link show | grep 'state UP' | cut -d':' -f2 | awk '{print $1}' | egrep -v '(veth|lo|veth|br|tailscale|docker)' | tail -1)
