@@ -84,7 +84,7 @@ init() {
     rfsrc
 
     # Setup RapidFort
-    [ ! -s /root/BUILD_USER_NAME ] && echo YOUR_NAME > /root/BUILD_USER_NAME
+    [ ! -s /root/BUILD_USER_NAME ] && echo UNKNOWN > /root/BUILD_USER_NAME
     [ ! -s /root/rapidfort/RF_BASE ] && echo ubi8 > /root/rapidfort/RF_BASE
     [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ] && echo 1 > /root/rapidfort/RF_PARALLEL_BUILD
     [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ] && echo docker > /root/rapidfort/RF_CONTAINER_ENGINE

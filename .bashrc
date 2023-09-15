@@ -1,7 +1,6 @@
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'
 alias l='/bin/pwd ; /bin/ls -lrtAF --color=auto'
-
 alias pd="pushd"
 alias ppd="popd"
 alias gs="git status"
@@ -10,19 +9,12 @@ alias gc="git commit"
 alias gg='git log --all --decorate --oneline --graph'
 alias ggl='git log --pretty=format:"[%h] %ae, %ar: %s" --stat'
 alias gurl='git remote -v'
-
-git config --global diff.tool vimdiff
-git config --global merge.tool vimdiff
-git config --global difftool.prompt false
-
 alias rfcmd='_rfcmd(){ docker run --rm --cap-add=SYS_PTRACE -it $@; } ; _rfcmd'
 alias rfsh='_rfsh(){ docker run --rm --cap-add=SYS_PTRACE -it $@ /.rapidfort_RtmF/sh; } ; _rfsh'
 alias rmi='docker rmi -f $(docker images -aq)'
-
 alias kcontext='kubectl config get-contexts'
 alias kscontext='kubectl config use-context'
 alias wurl='_wurl(){curl -k -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" https://$1/rfpubsub;}; _wurl'
-
 alias flatj='_schema() { jq '\'' paths(scalars) | map(tostring) | join(".")'\'' $1; }; _schema'
 alias flatjv='_schema1()
     { jq -r '\'' paths(scalars) as $p | [ ( [ $p[] | tostring ] | join(".") ), ( getpath($p) | tojson )] | join(" = ") '\'' $1; }; _schema1'
@@ -45,11 +37,6 @@ case "$TERM" in
     xterm-color|*-256color) color_prompt=yes;;
 esac
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
-#force_color_prompt=yes
-
 if [ -n "$force_color_prompt" ]; then
     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
     # We have color support; assume it's compliant with Ecma-48
@@ -60,7 +47,6 @@ if [ -n "$force_color_prompt" ]; then
     color_prompt=
     fi
 fi
-
 
 if test -s ~/my_ip_address.txt ; then
     cp -vf ~/my_ip_address.txt /tmp/my_ip_address.txt
@@ -90,17 +76,15 @@ fi
 if test ! -s $HOME/.git-prompt.sh ; then
     curl -Lo $HOME/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 fi
+
 source $HOME/.git-prompt.sh
 
 if [ "$TERM" = "dumb" ] ; then
      PS1="> "
 elif [ "$color_prompt" = yes ]; then
-    # MEF: Show public IP in prompt
-    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]\[\033[33m\]$(__git_ps1)\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$\n'
+    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]\[\033[33m\]$(__git_ps1)\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\#\n'
 else
-    #PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-    # MEF: Show public IP in prompt
-    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\u@\h$(__git_ps1):\w\$\n'
+    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\u@\h$(__git_ps1):\w\#\n'
 fi
 unset color_prompt force_color_prompt
 
@@ -126,5 +110,8 @@ module_log() {
     done
     exec bash
 }
-
 export -f module_log
+
+git config --global diff.tool vimdiff
+git config --global merge.tool vimdiff
+git config --global difftool.prompt false
