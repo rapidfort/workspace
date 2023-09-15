@@ -89,17 +89,18 @@ init() {
     [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ] && echo 1 > /root/rapidfort/RF_PARALLEL_BUILD
     [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ] && echo docker > /root/rapidfort/RF_CONTAINER_ENGINE
 
+    # Setup local container registry
+    if ! docker ps | grep registry ; then
+        registry-setup.sh
+    fi
+
     # Launch Cluster
-    if [[ $(kind cluster get) =~ "rapidfort" ]] then
+    if [[ $(kind cluster get) =~ "rapidfort" ]]; then
         echo $(kind cluster get)
     else
         (cd /root/rapidfort/rapidfort-platform/ && ./play.sh init)
     fi
 
-    # Setup local container registry
-    if ! docker ps | grep registry ; then
-        registry-setup.sh
-    fi
 
     # Deploy application
     echo "Update user-data inside /root/rapidfort/rapidfort-platform/override-user.yaml"
