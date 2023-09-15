@@ -82,9 +82,9 @@ source $HOME/.git-prompt.sh
 if [ "$TERM" = "dumb" ] ; then
      PS1="> "
 elif [ "$color_prompt" = yes ]; then
-    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h:\[\033[01;34m\]\w\[\033[00m\] \[\033[00m\]\[\033[33m\]$(__git_ps1)\[\033[00m\] $ \n'
+    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h:\[\033[01;34m\]\w\[\033[00m\]\[\033[00m\]\[\033[33m\]$(__git_ps1)\[\033[00m\] $\n'
 else
-    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\u@\h$(__git_ps1):\w $ \n'
+    PS1='${KCONTEXT}[${RF_APP_HOST}] ${debian_chroot:+($debian_chroot)}\u@\h$(__git_ps1):\w $\n'
 fi
 unset color_prompt force_color_prompt
 
