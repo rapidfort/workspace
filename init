@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 YQ_RELEASE=v4.35.1
 KIND_RELEASE=v0.20.0
@@ -9,10 +9,17 @@ init() {
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
     export LC_ALL="C"
     export DEBIAN_FRONTEND=noninteractive
-    apt update
+    # Apt update fails for WSL2
+    if test -z "${WSL_DISTRO_NAME}"; then
+        apt update
+    fi
 
     # Install OS dependencies
-    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
+    if [[ "${WSL_DISTRO_NAME}" =~ "*Alpine*" ]]; then
+        apk add curl python3-pip unzip parallel screen jq vim bc time
+    else
+        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
+    fi
 
     # Install go
     if ! command -v go; then
