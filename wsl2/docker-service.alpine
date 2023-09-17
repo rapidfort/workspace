@@ -1,0 +1,5 @@
+DOCKER_DISTRO="Alpine"
+DOCKER_LOG_DIR=$HOME/docker_logs
+mkdir -pm o=,ug=rwx "$DOCKER_LOG_DIR"
+/mnt/c/Windows/System32/wsl.exe -d $DOCKER_DISTRO sh -c "nohup sudo -b dockerd < /dev/null > $DOCKER_LOG_DIR/dockerd.log 2>&1"
+

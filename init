@@ -5,6 +5,7 @@ KIND_RELEASE=v0.20.0
 GOLANG_RELEASE=1.21.1
 HELM_RELEASE=v3.12.3
 
+
 init() {
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
     export LC_ALL="C"
@@ -16,7 +17,7 @@ init() {
 
     # Install OS dependencies
     if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
-        apk add curl py3-pip unzip parallel screen jq vim bc time
+        apk add curl py3-pip unzip parallel screen jq vim bc docker coreutils sudo
     else
         apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
     fi
@@ -51,12 +52,14 @@ init() {
         tar zxvf helm-${HELM_RELEASE}-linux-amd64.tar.gz
         mv -vf linux-amd64/helm /usr/local/bin
         rm -rf linux-amd64
+        rm -f helm-${HELM_RELEASE}-linux-amd64.tar.gz
     fi
 
     # install docker
     if ! command -v docker; then
         curl -fsSL https://get.docker.com -o get-docker.sh
         sh get-docker.sh
+        rm get-docker.sh
     fi
 
     # install kind
@@ -107,7 +110,6 @@ init() {
     else
         (cd /root/rapidfort/rapidfort-platform/ && ./play.sh init)
     fi
-
 
     # Deploy application
     echo "Update user-data inside /root/rapidfort/rapidfort-platform/override-user.yaml"
