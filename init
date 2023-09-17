@@ -5,13 +5,12 @@ KIND_RELEASE=v0.20.0
 GOLANG_RELEASE=1.21.1
 HELM_RELEASE=v3.12.3
 
-
 init() {
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
     export LC_ALL="C"
-    export DEBIAN_FRONTEND=noninteractive
     # Apt update fails for WSL2
     if test -z "${WSL_DISTRO_NAME}"; then
+        export DEBIAN_FRONTEND=noninteractive
         apt update
     fi
 
@@ -60,6 +59,15 @@ init() {
         curl -fsSL https://get.docker.com -o get-docker.sh
         sh get-docker.sh
         rm get-docker.sh
+    fi
+
+    # run docker
+    if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
+        (cd wsl2 && ./docker-service.alpine)
+    elif [[ "${WSL_DISTRO_NAME}" =~ "Debian" ]]; then
+        (cd wsl2 && ./docker-service.debian)
+    else
+        : # no op
     fi
 
     # install kind
