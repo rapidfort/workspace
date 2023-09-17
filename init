@@ -15,8 +15,8 @@ init() {
     fi
 
     # Install OS dependencies
-    if [[ "${WSL_DISTRO_NAME}" =~ "*Alpine*" ]]; then
-        apk add curl python3-pip unzip parallel screen jq vim bc time
+    if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
+        apk add curl py3-pip unzip parallel screen jq vim bc time
     else
         apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
     fi
