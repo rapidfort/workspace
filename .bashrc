@@ -78,6 +78,8 @@ if test ! -s $HOME/.git-prompt.sh ; then
 fi
 
 source $HOME/.git-prompt.sh
+export GIT_PS1_SHOWCOLORHINTS=1
+export GIT_PS1_SHOWDIRTYSTATE=1
 
 if [ "$TERM" = "dumb" ] ; then
      PS1="> "
