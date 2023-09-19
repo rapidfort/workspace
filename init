@@ -18,7 +18,7 @@ init() {
     if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
         apk add curl py3-pip unzip parallel screen jq vim bc docker coreutils sudo
     else
-        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc -y
+        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc -y
     fi
 
     # Install go
