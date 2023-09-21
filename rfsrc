@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo -n "Enter repo uri -> (e.g: git@acme.com:johndoe): "
+read REPO_URI
+
+export RF_REPO_ROOT="${REPO_URI}"
+
 if test -z "${RF_REPO_ROOT}"; then
     echo "set RF_REPO_ROOT"
     echo export RF_REPO_ROOT="<Your REPO ROOT>"
@@ -70,7 +75,7 @@ if test -n "${FAST}"; then
 else
     export DEPTH=
 fi
-
+set -x
 repo_pull_clone() {
     pushd "${HOME}"/rapidfort >/dev/null
     repo=$1
