@@ -4,6 +4,8 @@ YQ_RELEASE=v4.35.1
 KIND_RELEASE=v0.20.0
 GOLANG_RELEASE=1.21.1
 HELM_RELEASE=v3.12.3
+REGISTRY_NAME=${REGISTRY_NAME:-localhost:5000}
+REGISTRY_CONTAINER_NAME=localhost-registry
 
 init() {
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
@@ -101,7 +103,25 @@ init() {
 
     # Setup local container registry
     if ! docker ps | grep registry ; then
-        registry-setup.sh
+
+        # Allow insecure registry (Host docker)
+        if test ! -s "/etc/docker/daemon.json"; then
+            echo "{}" > "/etc/docker/daemon.json"
+        fi
+
+        cp -vf /etc/docker/daemon.json /etc/docker/daemon.json.org
+
+        cat /etc/docker/daemon.json | jq --arg REGISTRY_NAME "${REGISTRY_NAME}" \
+            '."insecure-registries"|=( . + [$REGISTRY_NAME] | unique)' | tee  /etc/docker/daemon.json
+        systemctl restart docker
+
+        # Start registry
+        REGISTRY_HOST=$(echo $REGISTRY_NAME | cut -d':' -f1)
+        REGISTRY_PORT=$(echo $REGISTRY_NAME | cut -d':' -f2)
+        if docker inspect "${REGISTRY_CONTAINER_NAME}" >/dev/null 2>&1; then
+            docker rm -f "${REGISTRY_CONTAINER_NAME}"
+        fi
+        docker run -d --restart=always -p "127.0.0.1:${REGISTRY_PORT}:5000" --name "${REGISTRY_CONTAINER_NAME}" registry:2
     fi
     
     # pull code
