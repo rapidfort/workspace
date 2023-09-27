@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 YQ_RELEASE=v4.35.1
 KIND_RELEASE=v0.20.0
@@ -8,13 +8,30 @@ REGISTRY_NAME=${REGISTRY_NAME:-localhost:5000}
 REGISTRY_CONTAINER_NAME=localhost-registry
 
 init() {
-    export TZ="/usr/share/zoneinfo/America/Los_Angeles"
-    export LC_ALL="C"
 
     # Install OS dependencies
     if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
         apk add curl py3-pip unzip parallel screen jq vim bc docker coreutils sudo
-    else
+        if test ! -e /etc/wsl.conf; then
+            cp wsl2/wsl.conf.alpine /etc/wsl.conf
+            sudo killall -r '.*'
+        fi
+    fi
+
+    # Install OS dependencies
+    if [[ "${WSL_DISTRO_NAME}" =~ "Debian" ]]; then
+        export TZ="/usr/share/zoneinfo/America/Los_Angeles"
+        export LC_ALL="C"
+        export DEBIAN_FRONTEND=noninteractive
+        apt update
+        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc -y
+        if test ! -e /etc/wsl.conf; then
+            cp wsl2/wsl.conf.debian /etc/wsl.conf
+            sudo killall -r '.*'
+        fi
+    fi
+
+    if test -z "${WSL_DISTRO_NAME}"; then
         export DEBIAN_FRONTEND=noninteractive
         apt update
         apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc -y
@@ -113,8 +130,10 @@ init() {
 
         cat /etc/docker/daemon.json | jq --arg REGISTRY_NAME "${REGISTRY_NAME}" \
             '."insecure-registries"|=( . + [$REGISTRY_NAME] | unique)' | tee  /etc/docker/daemon.json
-        systemctl restart docker
-
+        
+        if test -z "${WSL_DISTRO_NAME}"; then
+            systemctl restart docker
+        fi
         # Start registry
         REGISTRY_HOST=$(echo $REGISTRY_NAME | cut -d':' -f1)
         REGISTRY_PORT=$(echo $REGISTRY_NAME | cut -d':' -f2)
