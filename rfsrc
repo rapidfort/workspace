@@ -1,7 +1,9 @@
 #!/bin/bash
 
-echo -n "Enter repo uri -> (e.g: git@acme.com:johndoe): "
-read REPO_URI
+if test -z $REPO_URI; then
+    echo -n "Enter repo uri -> (e.g: git@acme.com:johndoe): "
+    read REPO_URI
+fi
 
 export RF_REPO_ROOT="${REPO_URI}"
 
