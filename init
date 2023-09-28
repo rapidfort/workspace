@@ -9,34 +9,12 @@ REGISTRY_CONTAINER_NAME=localhost-registry
 
 init() {
 
-    # Install OS dependencies
-    if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
-        apk add curl py3-pip unzip parallel screen jq vim bc docker coreutils sudo
-        if test ! -e /etc/wsl.conf; then
-            cp wsl2/wsl.conf.alpine /etc/wsl.conf
-            sudo killall -r '.*'
-        fi
-    fi
-
-    # Install OS dependencies
-    if [[ "${WSL_DISTRO_NAME}" =~ "Debian" ]]; then
-        export TZ="/usr/share/zoneinfo/America/Los_Angeles"
-        export LC_ALL="C"
-        export DEBIAN_FRONTEND=noninteractive
-        apt update
-        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc -y
-        if test ! -e /etc/wsl.conf; then
-            cp wsl2/wsl.conf.debian /etc/wsl.conf
-            sudo killall -r '.*'
-        fi
-    fi
-
-    if test -z "${WSL_DISTRO_NAME}"; then
-        export DEBIAN_FRONTEND=noninteractive
-        apt update
-        apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc -y
-    fi
-
+    export TZ="/usr/share/zoneinfo/America/Los_Angeles"
+    export LC_ALL="C"
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc bsdmainutils -y
+    
     # Install go
     if ! command -v go; then
         curl -Lo go1.21.1.linux-amd64.tar.gz https://go.dev/dl/go1.21.1.linux-amd64.tar.gz
@@ -75,15 +53,6 @@ init() {
         curl -fsSL https://get.docker.com -o get-docker.sh
         sh get-docker.sh
         rm get-docker.sh
-    fi
-
-    # run docker
-    if [[ "${WSL_DISTRO_NAME}" =~ "Alpine" ]]; then
-        (cd wsl2 && ./docker-service.alpine)
-    elif [[ "${WSL_DISTRO_NAME}" =~ "Debian" ]]; then
-        (cd wsl2 && ./docker-service.debian)
-    else
-        : # no op
     fi
 
     # install kind
@@ -131,9 +100,8 @@ init() {
         cat /etc/docker/daemon.json | jq --arg REGISTRY_NAME "${REGISTRY_NAME}" \
             '."insecure-registries"|=( . + [$REGISTRY_NAME] | unique)' | tee  /etc/docker/daemon.json
         
-        if test -z "${WSL_DISTRO_NAME}"; then
-            systemctl restart docker
-        fi
+        systemctl restart docker
+        
         # Start registry
         REGISTRY_HOST=$(echo $REGISTRY_NAME | cut -d':' -f1)
         REGISTRY_PORT=$(echo $REGISTRY_NAME | cut -d':' -f2)
@@ -143,17 +111,16 @@ init() {
         docker run -d --restart=always -p "127.0.0.1:${REGISTRY_PORT}:5000" --name "${REGISTRY_CONTAINER_NAME}" registry:2
     fi
     
-    # pull code
-    if test ! -s /usr/local/bin/rfsrc; then
-        ./rfsrc
-    fi
-
     # Launch Cluster
     if [[ $(kind get clusters) =~ "rapidfort" ]]; then
         echo $(kind get clusters) 
     else
         (cd /root/rapidfort/rapidfort-platform/ && ./play.sh init)
     fi
+
+    # pull code
+    # pull user_data_template
+    
 
 }
 

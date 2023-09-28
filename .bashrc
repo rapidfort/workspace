@@ -117,3 +117,9 @@ export -f module_log
 git config --global diff.tool vimdiff
 git config --global merge.tool vimdiff
 git config --global difftool.prompt false
+
+if test -s $HOME/.user_data ; then
+    set -a
+    source $HOME/.user_data
+    set +a
+fi
