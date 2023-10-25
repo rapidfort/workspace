@@ -71,7 +71,7 @@ init() {
     fi
 
     source ~/.bashrc
-    mkdir -p /root/{rapidfort}
+    mkdir -p /root/rapidfort
 
     # Setup RapidFort
     [ ! -s /root/BUILD_USER_NAME ] && echo build-system > /root/BUILD_USER_NAME
