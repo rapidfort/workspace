@@ -1,9 +1,18 @@
 #!/bin/bash
 
+
 if test -z $REPO_URI; then
     echo -n "Enter repo uri -> (e.g: git@acme.com:johndoe): "
     read REPO_URI
 fi
+
+if test -e ${HOME}/.ssh/id_rsa; then
+    echo "Put your bitbucket.org private key exiting"
+    exit 0
+fi
+
+# for non interactive cloning
+ssh-keyscan -t rsa bitbucket.org >> ${HOME}/.ssh/known_hosts
 
 export RF_REPO_ROOT="${REPO_URI}"
 
