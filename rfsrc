@@ -6,7 +6,7 @@ if test -z $REPO_URI; then
     read REPO_URI
 fi
 
-if test -e ${HOME}/.ssh/id_rsa; then
+if ! test -e ${HOME}/.ssh/id_rsa; then
     echo "Put your bitbucket.org private key exiting"
     exit 0
 fi
