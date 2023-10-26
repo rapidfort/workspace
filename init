@@ -28,6 +28,9 @@ init() {
         rm -rf awscliv2.zip aws
     fi
 
+    # install azure cli
+    curl -L https://aka.ms/InstallAzureCli | bash
+
     if ! command -v kubectl; then
         curl -Lo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
         chmod +x /usr/local/bin/kubectl
