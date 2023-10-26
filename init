@@ -11,7 +11,7 @@ init() {
     export LC_ALL="C"
     export DEBIAN_FRONTEND=noninteractive
     apt update
-    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc bsdmainutils -y
+    apt install curl wget python3-pip unzip parallel screen moreutils time jq vim bc calc bsdmainutils lsb-release -y
 
     # Install go
     if ! command -v go; then
