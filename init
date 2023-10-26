@@ -91,7 +91,11 @@ init() {
     [ ! -s /root/rapidfort/RF_BASE ] && echo ubi8 > /root/rapidfort/RF_BASE || true
     [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ] && echo 1 > /root/rapidfort/RF_PARALLEL_BUILD || true
     [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ] && echo docker > /root/rapidfort/RF_CONTAINER_ENGINE || true
-
+   
+    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
+    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
+    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
+    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
 }
 
 init
