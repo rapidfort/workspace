@@ -53,6 +53,7 @@ rapidfort \
 rapidfort-platform \
 rapidrisk \
 rfapi \
+rfproxy \
 rfpubsub \
 rftrace \
 rfvdb \
