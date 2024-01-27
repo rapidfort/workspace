@@ -4,14 +4,69 @@ YQ_RELEASE=v4.35.1
 KIND_RELEASE=v0.20.0
 GOLANG_RELEASE=1.21.1
 HELM_RELEASE=v3.12.3
-
+  
 init() {
 
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
     export LC_ALL="C"
     export DEBIAN_FRONTEND=noninteractive
     apt update
-    apt install curl procmail wget python3-pip unzip parallel screen moreutils time jq vim bc calc bsdmainutils lsb-release rsync pylint shellcheck -y
+    # Please keep it sorted
+    apt install -y acl \
+                    apcalc \
+                    aptitude \
+                    apt-transport-https \
+                    autoconf \
+                    bc \
+                    bison \
+                    bsdmainutils \
+                    build-essential \
+                    ca-certificates \
+                    calc \
+                    cargo \
+                    cmake-data \
+                    conntrack \
+                    curl \
+                    default-libmysqlclient-dev \
+                    default-mysql-client \
+                    emacs-nox \
+                    ethtool \
+                    flex \
+                    git \
+                    gnupg \
+                    inotify-tools \
+                    jq \
+                    libffi-dev \
+                    libssl-dev \
+                    libtool \
+                    lsb-release \
+                    lvm2 \
+                    lynx \
+                    moreutils \
+                    net-tools \
+                    npm \
+                    openntpd \
+                    parallel \
+                    pkg-config \
+                    procmail \
+                    pylint \
+                    python3-dev \
+                    python3-pip \
+                    redis-tools \
+                    rsync \
+                    screen \
+                    shc \
+                    shellcheck \
+                    sl \
+                    socat \
+                    strace \
+                    sudo \
+                    swig \
+                    tcpdump \
+                    time \
+                    unzip \
+                    vim \
+                    wget
 
     # Install go
     if ! command -v go; then
