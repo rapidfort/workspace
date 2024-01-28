@@ -66,4 +66,4 @@ screen -t fun bash -c "cd /root/rapidfort/functional-tests && exec bash"
 screen -t platform bash -c "cd /root/rapidfort/rapidfort-platform && exec bash"
 screen -t test bash -c "cd /opt/rapidfort && exec bash"
 screen -t build bash -c "cd /root/rapidfort && exec bash"
-screen -t log-bui bash -c "cd /root/funct && tail -F /root/funct/parallel_build/* && exec bash"
+
