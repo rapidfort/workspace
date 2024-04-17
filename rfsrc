@@ -33,6 +33,7 @@ cloudvm-common \
 cloudvm-orchestrator \
 cloudvm-scanner \
 common \
+documentation \
 file_access \
 fileupload \
 frontrow \
