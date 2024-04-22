@@ -26,13 +26,16 @@ fi
 mkdir -p "$HOME"/rapidfort/network
 
 # Add new repos here with space as seprator
-repos="aggregator \
+repos="access \
+aggregator \
+arpoke \
 backend \
 bpf \
 cloudvm-common \
 cloudvm-orchestrator \
 cloudvm-scanner \
 common \
+documentation \
 file_access \
 fileupload \
 frontrow \
@@ -61,6 +64,8 @@ rollout \
 runner \
 standalone \
 strace \
+system-call-tests \
+vuln-scanner-test \
 vulns-db"
 
 my_prog="$0"

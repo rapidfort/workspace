@@ -1,0 +1,4 @@
+export RF_SERVER=rf_kind_standalone
+export RF_CONTAINER_ENGINE=docker
+export RF_S3_BUCKET=/opt/rapidfort/local-bucket
+export RF_STORAGE_TYPE=ls
