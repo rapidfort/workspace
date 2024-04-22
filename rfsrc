@@ -8,7 +8,7 @@ fi
 
 if ! test -e ${HOME}/.ssh/id_rsa; then
     echo "Put your bitbucket.org private key exiting"
-    exit 0
+    exit 1
 fi
 
 # for non interactive cloning
