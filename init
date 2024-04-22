@@ -1,9 +1,9 @@
 #!/bin/bash -ex
 
-YQ_RELEASE=v4.40.5
-KIND_RELEASE=v0.20.0
-GOLANG_RELEASE=1.21.1
-HELM_RELEASE=v3.14.0
+YQ_RELEASE=v4.43.1
+KIND_RELEASE=v0.22.0
+GOLANG_RELEASE=1.22.0
+HELM_RELEASE=v3.14.4
 
 init() {
 
@@ -70,9 +70,9 @@ init() {
 
     # Install go
     if ! command -v go; then
-        curl -Lo go1.21.1.linux-amd64.tar.gz https://go.dev/dl/go1.21.1.linux-amd64.tar.gz
+        curl -Lo go$GOLANG_RELEASE.linux-amd64.tar.gz https://go.dev/dl/go$GOLANG_RELEASE.linux-amd64.tar.gz
         rm -rf /usr/local/go && tar -C /usr/local -xzf go$GOLANG_RELEASE.linux-amd64.tar.gz
-        rm go1.21.1.linux-amd64.tar.gz
+        rm go$GOLANG_RELEASE.linux-amd64.tar.gz
     fi
 
     # install tools (helm, kubectl)
@@ -128,7 +128,7 @@ init() {
     fi
 
     # install aliases
-    for f in .bashrc .pylintrc .screenrc .vimrc .kubectl_aliases
+    for f in .bashrc .pylintrc .screenrc .vimrc .kubectl_aliases .user_data .bashrc.rfserver
     do
         cp -f $f ~
     done
@@ -151,6 +151,9 @@ init() {
     ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
     ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
     ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
+    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
+
+    
 }
 
 init
