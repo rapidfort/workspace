@@ -2,7 +2,7 @@
 
 YQ_RELEASE=v4.43.1
 KIND_RELEASE=v0.22.0
-GOLANG_RELEASE=1.22.0
+GOLANG_RELEASE=1.22.2
 HELM_RELEASE=v3.14.4
 
 init() {
@@ -32,6 +32,7 @@ init() {
                     emacs-nox \
                     ethtool \
                     flex \
+                    fzf \
                     git \
                     gnupg \
                     inotify-tools \
@@ -64,6 +65,7 @@ init() {
                     swig \
                     tcpdump \
                     time \
+                    tmux \
                     unzip \
                     vim \
                     wget
@@ -152,7 +154,7 @@ init() {
     ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
     ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
     ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
-
+    cp rfdev /usr/local/bin/rfdev
     
 }
 
