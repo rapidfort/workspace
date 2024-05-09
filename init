@@ -227,7 +227,5 @@ init() {
     cp rfdev /usr/local/bin/rfdev
 }
 
-#init
-
-yq_install
+init
 
