@@ -1,9 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 YQ_RELEASE=v4.43.1
 KIND_RELEASE=v0.22.0
 GOLANG_RELEASE=1.22.2
 HELM_RELEASE=v3.14.4
+
+
 # Generic for MacOSX, Linux. arm64 is sometimes refererred as aarch64
 ARCH=$(uname -m)
 if [[ "$ARCH" == "aarch64" ]] ; then
@@ -13,8 +15,10 @@ elif [[ "$ARCH" == "arm64" ]] ; then
 else
     ARCH_ALT=NOT_SUPPORTED
 fi
-OS=$(uname)
-OS_STR=${OS,,}
+export OS=$(uname)
+export OS_STR=${OS,,}
+export ARCH
+export ARCH_ALT
 
 tailscale_install() {
     curl -fsSL https://tailscale.com/install.sh | sh
@@ -28,8 +32,8 @@ docker_install() {
 
 aws_install() {
     rm -rf awscliv2.zip
-    URL="https://awscli.amazonaws.com/awscli-exe-linux-$ARCH.zip"
-    curl -o "awscliv2.zip" $URL
+    URL="https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip"
+    curl -o "awscliv2.zip" ${URL}
     unzip awscliv2.zip
     ./aws/install
     rm -rf awscliv2.zip
@@ -45,37 +49,38 @@ gcp_install() {
 
 go_install() {
     set -x
-    local arch=$ARCH
-    URL=https://go.dev/dl/go$GOLANG_RELEASE.$OS_STR-$arch.tar.gz
-    if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        arch=$ARCH_ALT
+    local arch=${ARCH}
+
+    URL=https://go.dev/dl/go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        arch=${ARCH_ALT}
     fi
 
-    URL=https://go.dev/dl/go$GOLANG_RELEASE.$OS_STR-$arch.tar.gz
-    curl -Lo go$GOLANG_RELEASE.$OS_STR-$arch.tar.gz $URL
-    rm -rf /usr/local/go && tar -C /usr/local -xzf go$GOLANG_RELEASE.$OS_STR-$arch.tar.gz
-    rm go$GOLANG_RELEASE.$OS_STR-$arch.tar.gz
+    URL=https://go.dev/dl/go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
+    curl -Lo go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz ${URL}
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
+    rm go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
 }
 
 yq_install() {
-    local arch=$ARCH
-    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_$OS_STR_$arch
+    local arch=${ARCH}
+    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_${OS_STR}_${arch}
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
         arch=$ARCH_ALT
     fi
-    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_$OS_STR_$arch
-    curl -Lo /usr/local/bin/yq $URL
+    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_${OS_STR}_${arch}
+    curl -Lo /usr/local/bin/yq "${URL}"
     chmod +x /usr/local/bin/yq
 }
 
 kind_install() {
-    local arch=$ARCH
-    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-$OS_STR-$arch
-    if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        arch=$ARCH_ALT
+    local arch=${ARCH}
+    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-${OS_STR}-${arch}
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        arch=${ARCH_ALT}
     fi
-    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-$OS_STR-$arch
-    curl -Lo /usr/local/bin/kind $URL
+    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-${OS_STR}-${arch}
+    curl -Lo /usr/local/bin/kind ${URL}
     chmod +x /usr/local/bin/kind
 }
 
@@ -86,21 +91,21 @@ helm_install() {
         arch=$ARCH_ALT
     fi
     URL=https://get.helm.sh/helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz
-    curl -Lo helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz $URL
-    tar zxvf helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz
-    mv -vf $OS_STR-$arch/helm /usr/local/bin
-    rm -rf $OS_STR-$arch
-    rm -f helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz
+    curl -Lo helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz $URL
+    tar zxvf helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz
+    mv -vf ${OS_STR}-${arch}/helm /usr/local/bin
+    rm -rf ${OS_STR}-${arch}
+    rm -f helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz
 }
 
 kubectl_install() {
     local arch=$ARCH
-    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/$OS_STR/$arch/kubectl"
-    if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        arch=$ARCH_ALT
+    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${OS_STR}/${arch}/kubectl"
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        arch=${ARCH_ALT}
     fi
-    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/$OS_STR/$arch/kubectl"
-    curl -Lo /usr/local/bin/kubectl $URL
+    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${OS_STR}/${arch}/kubectl"
+    curl -Lo /usr/local/bin/kubectl "${URL}"
     chmod +x /usr/local/bin/kubectl
 }
 
@@ -168,7 +173,6 @@ debian_init() {
                     unzip \
                     vim \
                     wget
-
 }
 
 init() {
@@ -178,7 +182,7 @@ init() {
             if [[ "$ID" == "debian" ]]; then
                 debian_init
                 [ -z "$(command -v docker)" ]       && docker_install       || true
-                [ -z "$(command -v tailscale)" ]    && tailscale_install    || true            
+                [ -z "$(command -v tailscale)" ]    && tailscale_install    || true
                 [ -z "$(command -v go)" ]           && go_install           || true
                 [ -z "$(command -v helm)" ]         && helm_install         || true
                 [ -z "$(command -v kind)" ]         && kind_install         || true
@@ -194,7 +198,7 @@ init() {
     else
         echo "NotSupported: $(uname) ToDo"
     fi
-    
+
     # install aliases
     for f in .bashrc .pylintrc .screenrc .vimrc .kubectl_aliases .user_data .bashrc.rfserver
     do
@@ -223,4 +227,7 @@ init() {
     cp rfdev /usr/local/bin/rfdev
 }
 
-init
+#init
+
+yq_install
+
