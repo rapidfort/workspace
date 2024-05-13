@@ -147,6 +147,7 @@ debian_init() {
                     lvm2 \
                     lynx \
                     moreutils \
+                    musl-dev \
                     net-tools \
                     npm \
                     openntpd \
