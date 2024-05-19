@@ -1,24 +1,43 @@
-#!/bin/bash -ex
+#!/bin/bash -e
+# shellcheck disable=SC1091
 
-YQ_RELEASE=v4.43.1
+YQ_RELEASE=v4.44.1
 KIND_RELEASE=v0.23.0
 GOLANG_RELEASE=1.22.2
-HELM_RELEASE=v3.14.4
+HELM_RELEASE=v3.15.0
 
+source .pretty_print
 
-# Generic for MacOSX, Linux. arm64 is sometimes refererred as aarch64
-ARCH=$(uname -m)
-if [[ "$ARCH" == "aarch64" ]] ; then
-    ARCH_ALT=arm64
-elif [[ "$ARCH" == "arm64" ]] ; then
-    ARCH_ALT=aarch64
-else
-    ARCH_ALT=NOT_SUPPORTED
-fi
-export OS=$(uname)
-export OS_STR=${OS,,}
-export ARCH
-export ARCH_ALT
+get_os_str()
+{
+    # works on all posix shell
+    local _os
+    _os="$(uname)"
+    echo -n "$(echo "${_os}" | tr '[:upper:]' '[:lower:]')"
+}
+
+get_architecture()
+{
+    local _arch
+    _arch="$(uname -m)"
+    if [ "${_arch}" = "aarch64" ] || [ "${_arch}" = "arm64" ]; then
+        echo -n "arm64"
+    elif [ "${_arch}" = "amd64" ] || [ "${_arch}" = "x86_64" ]; then
+        echo -n "amd64"
+    else
+        print_bred "ERROR: $(get_os_str): ${_arch} not supported."
+        exit 1
+    fi
+}
+
+get_architecture_alt()
+{
+    if [ "$(get_architecture)" = "arm64" ]; then
+        echo -n "aarch64"
+    else
+        echo -n "x86_64"
+    fi
+}
 
 tailscale_install() {
     curl -fsSL https://tailscale.com/install.sh | sh
@@ -31,80 +50,79 @@ docker_install() {
 }
 
 aws_install() {
+    print_bgreen "Installing AWS CLI"
+    URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture)".zip
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture_alt)".zip
+    fi
     rm -rf awscliv2.zip
-    URL="https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip"
-    curl -o "awscliv2.zip" ${URL}
+    curl -o "awscliv2.zip" "${URL}"
     unzip awscliv2.zip
     ./aws/install
     rm -rf awscliv2.zip
 }
 
 az_install() {
+    print_bgreen "Installing az cli"
     curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 }
 
 gcp_install() {
+    print_bgreen "Installing gcp cli"
     curl -sSL https://sdk.cloud.google.com | bash
 }
 
 go_install() {
-    set -x
-    local arch=${ARCH}
-
-    URL=https://go.dev/dl/go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
+    print_bgreen "Installing golang"
+    URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        arch=${ARCH_ALT}
+        URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture_alt)".tar.gz
     fi
-
-    URL=https://go.dev/dl/go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
-    curl -Lo go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz ${URL}
-    rm -rf /usr/local/go && tar -C /usr/local -xzf go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
-    rm go${GOLANG_RELEASE}.${OS_STR}-${arch}.tar.gz
+    curl -Lo go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+    rm go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
 }
 
 yq_install() {
-    local arch=${ARCH}
-    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_${OS_STR}_${arch}
+    print_bgreen "Installing yq"
+    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture)"
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        arch=$ARCH_ALT
+        URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture_alt)"
     fi
-    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_${OS_STR}_${arch}
+
     curl -Lo /usr/local/bin/yq "${URL}"
     chmod +x /usr/local/bin/yq
 }
 
 kind_install() {
-    local arch=${ARCH}
-    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-${OS_STR}-${arch}
+    print_bgreen "Installing kind"
+    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture)"
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        arch=${ARCH_ALT}
+        URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture_alt)"
     fi
-    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-${OS_STR}-${arch}
-    curl -Lo /usr/local/bin/kind ${URL}
+    curl -Lo /usr/local/bin/kind "${URL}"
     chmod +x /usr/local/bin/kind
 }
 
 helm_install() {
-    local arch=$ARCH
-    URL=https://get.helm.sh/helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz
+    print_bgreen "Installing helm"
+    URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        arch=$ARCH_ALT
+        URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture_alt)".tar.gz
     fi
-    URL=https://get.helm.sh/helm-${HELM_RELEASE}-$OS_STR-$arch.tar.gz
-    curl -Lo helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz $URL
-    tar zxvf helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz
-    mv -vf ${OS_STR}-${arch}/helm /usr/local/bin
-    rm -rf ${OS_STR}-${arch}
-    rm -f helm-${HELM_RELEASE}-${OS_STR}-${arch}.tar.gz
+    curl -Lo helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
+    tar zxvf helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
+    mv -vf "$(get_os_str)"-"$(get_architecture)"/helm /usr/local/bin
+    rm -rf "$(get_os_str)"-"$(get_architecture)"
+    rm -f helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
 }
 
 kubectl_install() {
-    local arch=$ARCH
-    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${OS_STR}/${arch}/kubectl"
+    print_bgreen "Installing kubectl"
+    URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/"$(get_architecture)"/kubectl
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        arch=${ARCH_ALT}
+        URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/$(get_architecture_alt)/kubectl
     fi
-    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/${OS_STR}/${arch}/kubectl"
     curl -Lo /usr/local/bin/kubectl "${URL}"
     chmod +x /usr/local/bin/kubectl
 }
@@ -127,7 +145,7 @@ debian_init() {
                     ca-certificates \
                     calc \
                     cargo \
-	            cmake \
+	                cmake \
                     cmake-data \
                     conntrack \
                     curl \
@@ -149,7 +167,7 @@ debian_init() {
                     lynx \
                     moreutils \
                     musl-dev \
-		    nasm \
+		            nasm \
                     net-tools \
                     npm \
                     openntpd \
@@ -179,21 +197,48 @@ debian_init() {
 }
 
 init() {
+    if [ "$1" = "update" ]; then
+        update=true
+    else
+        update=false
+    fi
+
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         if [[ -f /etc/os-release ]]; then
-            . /etc/os-release
-            if [[ "$ID" == "debian" ]]; then
+            source /etc/os-release
+            if [ "$ID" = "debian" ]; then
                 debian_init
-                [ -z "$(command -v docker)" ]       && docker_install       || true
-                [ -z "$(command -v tailscale)" ]    && tailscale_install    || true
-                [ -z "$(command -v go)" ]           && go_install           || true
-                [ -z "$(command -v helm)" ]         && helm_install         || true
-                [ -z "$(command -v kind)" ]         && kind_install         || true
-                [ -z "$(command -v yq)" ]           && yq_install           || true
-                [ -z "$(command -v kubectl)" ]      && kubectl_install      || true
-                [ -z "$(command -v aws)" ]          && aws_install          || true
-                [ -z "$(command -v az)" ]           && az_install           || true
-                #[ -z "$(command -v gcloud)" ]       && gcp_install          || true
+                if [ $update ] || [ -z "$(command -v docker)" ]; then
+                    docker_install
+                fi
+                if [ $update ] || [ -z "$(command -v tailscale)" ]; then
+                    tailscale_install
+                fi
+                if [ $update ] || [ -z "$(command -v go)" ]; then
+                    go_install       
+                fi
+                if [ $update ] || [ -z "$(command -v helm)" ]; then
+                    helm_install
+                fi     
+                if [ $update ] || [ -z "$(command -v kind)" ]; then
+                    kind_install
+                fi     
+                if [ $update ] || [ -z "$(command -v yq)" ]; then
+                    yq_install
+                fi       
+                if [ $update ] || [ -z "$(command -v kubectl)" ]; then
+                    kubectl_install
+                fi 
+                if [ $update ] || [ -z "$(command -v aws)" ]; then
+                    aws_install
+                fi      
+                if [ $update ] || [ -z "$(command -v az)" ]; then
+                    az_install
+                fi
+                if [ $update ] || [ -z "$(command -v gcloud)" ]; then       
+                    #gcp_install
+                    :
+                fi      
             fi
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -208,19 +253,30 @@ init() {
         cp -f $f ~
     done
 
-    if test -s $HOME/.git-prompt.sh ; then
-        curl -Lo $HOME/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
-        source $HOME/.git-prompt.sh
+    if test -s "${HOME}"/.git-prompt.sh ; then
+        curl -Lo "${HOME}"/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+        source "${HOME}"/.git-prompt.sh
     fi
 
-    source ~/.bashrc
+    source "${HOME}"/.bashrc
     mkdir -p /root/rapidfort
 
     # Setup RapidFort
-    [ ! -s /root/BUILD_USER_NAME ] && echo build-system > /root/BUILD_USER_NAME || true
-    [ ! -s /root/rapidfort/RF_BASE ] && echo ubi8 > /root/rapidfort/RF_BASE || true
-    [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ] && echo 1 > /root/rapidfort/RF_PARALLEL_BUILD || true
-    [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ] && echo docker > /root/rapidfort/RF_CONTAINER_ENGINE || true
+    if [ ! -s /root/BUILD_USER_NAME ]; then
+        echo build-system > /root/BUILD_USER_NAME
+    fi
+
+    if [ ! -s /root/rapidfort/RF_BASE ]; then
+        echo debian > /root/rapidfort/RF_BASE
+    fi
+
+    if [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ]; then 
+        echo 1 > /root/rapidfort/RF_PARALLEL_BUILD
+    fi
+
+    if [ ! -s /root/rapidfort/RF_CONTAINER_ENGINE ]; then
+        echo docker > /root/rapidfort/RF_CONTAINER_ENGINE
+    fi
 
     ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
     ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
@@ -230,5 +286,5 @@ init() {
     cp rfdev /usr/local/bin/rfdev
 }
 
-init
+init "${1}"
 
