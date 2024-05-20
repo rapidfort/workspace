@@ -59,7 +59,7 @@ aws_install() {
     curl -o "awscliv2.zip" "${URL}"
     unzip awscliv2.zip
     ./aws/install
-    rm -rf awscliv2.zip
+    rm -rf awscliv2.zip aws
 }
 
 az_install() {
@@ -215,30 +215,30 @@ init() {
                     tailscale_install
                 fi
                 if [ $update ] || [ -z "$(command -v go)" ]; then
-                    go_install       
+                    go_install
                 fi
                 if [ $update ] || [ -z "$(command -v helm)" ]; then
                     helm_install
-                fi     
+                fi
                 if [ $update ] || [ -z "$(command -v kind)" ]; then
                     kind_install
-                fi     
+                fi
                 if [ $update ] || [ -z "$(command -v yq)" ]; then
                     yq_install
-                fi       
+                fi
                 if [ $update ] || [ -z "$(command -v kubectl)" ]; then
                     kubectl_install
-                fi 
+                fi
                 if [ $update ] || [ -z "$(command -v aws)" ]; then
                     aws_install
-                fi      
+                fi
                 if [ $update ] || [ -z "$(command -v az)" ]; then
                     az_install
                 fi
-                if [ $update ] || [ -z "$(command -v gcloud)" ]; then       
+                if [ $update ] || [ -z "$(command -v gcloud)" ]; then
                     #gcp_install
                     :
-                fi      
+                fi
             fi
         fi
     elif [ "$(get_os_str)" = "darwin" ]; then
@@ -271,7 +271,7 @@ init() {
         echo debian > /root/rapidfort/RF_BASE
     fi
 
-    if [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ]; then 
+    if [ ! -s /root/rapidfort/RF_PARALLEL_BUILD ]; then
         echo 1 > /root/rapidfort/RF_PARALLEL_BUILD
     fi
 
