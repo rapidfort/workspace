@@ -197,20 +197,20 @@ debian_init() {
 }
 
 init() {
+    local update
     if [ "$1" = "update" ]; then
         update=true
-    else
-        update=false
     fi
 
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if [[ -f /etc/os-release ]]; then
+    if [ "$(get_os_str)" = "linux" ]; then
+        if [ -f /etc/os-release ]; then
             source /etc/os-release
             if [ "$ID" = "debian" ]; then
                 debian_init
                 if [ $update ] || [ -z "$(command -v docker)" ]; then
                     docker_install
                 fi
+
                 if [ $update ] || [ -z "$(command -v tailscale)" ]; then
                     tailscale_install
                 fi
@@ -241,10 +241,11 @@ init() {
                 fi      
             fi
         fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "MacOSX: ToDo"
+    elif [ "$(get_os_str)" = "darwin" ]; then
+        print_bred "MacOSX: To Do"
+        exit 1
     else
-        echo "NotSupported: $(uname) ToDo"
+        print_bred "NotSupported: $(get_os_str) $(get_architecture) To Do"
     fi
 
     # install aliases
@@ -259,7 +260,7 @@ init() {
     fi
 
     source "${HOME}"/.bashrc
-    mkdir -p /root/rapidfort
+    #mkdir -p /root/rapidfort
 
     # Setup RapidFort
     if [ ! -s /root/BUILD_USER_NAME ]; then
