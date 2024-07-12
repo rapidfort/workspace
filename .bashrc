@@ -10,7 +10,8 @@ alias gc="git commit"
 alias gg='git log --all --decorate --oneline --graph'
 alias ggl='git log --pretty=format:"[%h] %ae, %ar: %s" --stat'
 
-alias rfcmd='_rfcmd(){ docker run --rm --cap-add=NET_ADMIN --cap-add=SYS_PTRACE -it $@; } ; _rfcmd'
+alias rfcmd='_rfcmd(){ docker run --rm --cap-add=SYS_PTRACE -it $@; } ; _rfcmd'
+alias rfcmde='_rfcmd(){ docker run --rm --entrypoint= --cap-add=SYS_PTRACE -it $@; } ; _rfcmd'
 alias rmi='docker rmi -f $(docker images -aq)'
 
 alias kcontext='kubectl config get-contexts || echo "no-kcontext"'
@@ -252,6 +253,8 @@ module_log() {
 }
 
 export -f module_log
+
+alias di='_di() { docker images| grep ^$1; }; _di'
 
 if test -s $HOME/.my_aliases ; then
     set -a
