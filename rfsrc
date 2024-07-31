@@ -30,6 +30,7 @@ arpoke \
 backend \
 bpf \
 common \
+curated_images \
 documentation \
 file_access \
 fileupload \
