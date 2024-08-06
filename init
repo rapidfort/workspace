@@ -1,10 +1,10 @@
 #!/bin/bash -e
 # shellcheck disable=SC1091
 
-YQ_RELEASE=v4.44.1
+YQ_RELEASE=v4.44.3
 KIND_RELEASE=v0.23.0
-GOLANG_RELEASE=1.22.2
-HELM_RELEASE=v3.15.0
+GOLANG_RELEASE=1.22.5
+HELM_RELEASE=v3.15.3
 
 source .pretty_print
 
