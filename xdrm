@@ -1,0 +1,17 @@
+#!/bin/bash
+
+string="$1"
+force="${2}"
+
+if [ -n "$string" ]; then
+    if [ -n "$force" ]; then
+        docker rmi $(docker images | grep "$string" | awk '{print$3'}) $force
+    else
+        echo "Deleting.."
+        xdi $string
+        echo "Enter: Continue or ^c to exit"
+        read continue_yes
+        docker rmi $(docker images | grep "$string" | awk '{print$3'})
+    fi
+fi
+

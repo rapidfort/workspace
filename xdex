@@ -1,0 +1,19 @@
+#!/bin/bash
+set -o pipefail
+container="$1"
+cmd="$2"
+if [ -n "$container" ]; then
+    if [ -n "$cmd" ]; then
+        shift
+        docker exec -it $container $@
+    else
+        docker exec -it $container bash | grep -q 'OCI runtime exec failed:'
+        if [ $? -ne 0 ]; then
+            docker exec -it $container sh
+        fi
+    fi
+else
+    echo Container missing as arg
+    exit 0
+fi
+
