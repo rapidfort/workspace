@@ -1,0 +1,9 @@
+#!/bin/bash
+
+image="$1"
+if [ -n "$image" ]; then
+    docker images --format "{{.ID}} {{.CreatedSince}} {{.Size}} {{.Repository}}:{{.Tag}}" | grep "$image" | column -t
+else
+    docker images --format "{{.ID}} {{.CreatedSince}} {{.Size}} {{.Repository}}:{{.Tag}}" | column -t
+fi
+
