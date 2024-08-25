@@ -45,12 +45,14 @@ tailscale_install() {
 }
 
 docker_install() {
+    rm -f get-docker.sh
     curl -fsSL https://get.docker.com -o get-docker.sh
     sh get-docker.sh
     rm -f get-docker.sh
 }
 
 aws_install() {
+    rm -rf awscliv2.zip aws
     print_bgreen "Installing AWS CLI"
     URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture)".zip
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
