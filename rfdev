@@ -46,8 +46,8 @@ CONFIG
 }
 
 create_windows() {
-    local windows=("build" "build2" "test1" "log1" "test2")
-    local repos=("." "." "." "." ".")
+    local windows=("cli" "platform" "common" "test" "log" "build")
+    local repos=("." "." "." "." "." ".")
     # windows=("agg" "bac" "com" "doc" "facc" "fupl" "fro" "fun" "iso" "k8s" "pac" "cli" "plat" "rfp" "rfv" "run" "vul")
     # repos=("aggregator" "backend" "common" "documentation" "file_access" "fileupload" "frontrow" "functional-tests" \
     #        "iso-master" "k8s-rf-monitor" "package-analyzer" "rapidfort" "rapidfort-platform" "rfpubsub" "rfvdb" "runner" "vulns-db")
