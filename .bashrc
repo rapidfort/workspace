@@ -154,6 +154,14 @@ klo() {
   exec bash
 }
 
+module_log() {
+    until kubectl logs -f -l app.kubernetes.io/name=$1
+    do
+        sleep 1
+    done
+    exec bash
+}
+
 export -f module_log
 
 kex() {
