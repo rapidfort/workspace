@@ -146,7 +146,7 @@ else
   export EDITOR=vim
 fi
 
-klo() {
+xklo() {
   until kubectl logs -f -l app.kubernetes.io/name=$1
   do
       sleep 1
@@ -164,7 +164,7 @@ module_log() {
 
 export -f module_log
 
-kex() {
+xkex() {
   if [ -z "$1" ]; then
     echo "Usage: kex [aggregator|backend|fileupload|frontrow|isomaster|keycloak|lock|mysql|redis|registry|rfapi|rfpubsub|rfscan|rfvdb|vulnsdb|runner|runnerbeat]"
     return 1
