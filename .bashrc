@@ -161,7 +161,7 @@ kex() {
     echo "Usage: kex [aggregator|backend|fileupload|frontrow|isomaster|keycloak|lock|mysql|redis|registry|rfapi|rfpubsub|rfscan|rfvdb|vulnsdb|runner|runnerbeat]"
     return 1
   fi
-  kubectl exec -it $(kubectl get pods | grep fileupload | head -1 | awk '{print $1}') -c fileupload -- bash
+  kubectl exec -it $(kubectl get pods | grep $1 | head -1 | awk '{print $1}') -c $1 -- bash
 }
 
 alias di='_di() { docker images| grep ^$1; }; _di'
