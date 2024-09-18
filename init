@@ -281,6 +281,7 @@ init() {
                 if [ $update ] || [ -z "$(command -v az)" ]; then
                     print_bgreen "Installing az cli"
                     az_install > az.log 2>&1
+                    rm az.log
                 fi
                 if [ $update ] || [ -z "$(command -v gcloud)" ]; then
                     print_bgreen "Installing gcp cli"
@@ -331,16 +332,15 @@ init() {
         echo yes > /root/rapidfort/RF_SKIP_PRODMON
     fi
 
-    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
-    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
-    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
-    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
-    ln -svf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
+    ln -sf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
+    ln -sf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
+    ln -sf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
+    ln -sf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
+    ln -sf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
 
-    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
+    ln -sf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
     cp rfdev /usr/local/bin/rfdev
-    cp -vf xd* /usr/local/bin
+    cp -f xd* /usr/local/bin
 }
 
 init "${1}"
-
