@@ -48,13 +48,15 @@ tailscale_install()
 crane_install()
 {
     local version
+    version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
     local os
     local arch
+    local url
 
-    version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
     os=$(uname)
-    arch=$(get_architectute_alt)
-    curl -sL "https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_${arch}.tar.gz" > go-containerregistry.tar.gz
+    arch=$(get_architecture_alt)
+    url="https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_${arch}.tar.gz"
+    curl -sL "$url" > go-containerregistry.tar.gz
     tar -xzf go-containerregistry.tar.gz -C /usr/local/bin
     rm go-containerregistry.tar.gz
 }
@@ -70,13 +72,12 @@ docker_install()
 aws_install()
 {
     rm -rf awscliv2.zip aws
-    print_bgreen "Installing AWS CLI"
     URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture)".zip
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
         URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture_alt)".zip
     fi
     rm -rf awscliv2.zip
-    curl -o "awscliv2.zip" "${URL}"
+    curl -s -o "awscliv2.zip" "${URL}"
     unzip awscliv2.zip
     if command -v aws; then
         ./aws/install --update
@@ -88,19 +89,16 @@ aws_install()
 
 az_install()
 {
-    print_bgreen "Installing az cli"
     curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 }
 
 gcp_install()
 {
-    print_bgreen "Installing gcp cli"
     curl -sSL https://sdk.cloud.google.com | bash
 }
 
 go_install()
 {
-    print_bgreen "Installing golang"
     URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
         URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture_alt)".tar.gz
@@ -112,35 +110,32 @@ go_install()
 
 yq_install()
 {
-    print_bgreen "Installing yq"
     URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture)"
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
         URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture_alt)"
     fi
 
-    curl -Lo /usr/local/bin/yq "${URL}"
+    curl -s -Lo /usr/local/bin/yq "${URL}"
     chmod +x /usr/local/bin/yq
 }
 
 kind_install()
 {
-    print_bgreen "Installing kind"
     URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture)"
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
         URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture_alt)"
     fi
-    curl -Lo /usr/local/bin/kind "${URL}"
+    curl -s -Lo /usr/local/bin/kind "${URL}"
     chmod +x /usr/local/bin/kind
 }
 
 helm_install()
 {
-    print_bgreen "Installing helm"
     URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
         URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture_alt)".tar.gz
     fi
-    curl -Lo helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
+    curl -s -Lo helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
     tar zxvf helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
     mv -vf "$(get_os_str)"-"$(get_architecture)"/helm /usr/local/bin
     rm -rf "$(get_os_str)"-"$(get_architecture)"
@@ -149,12 +144,11 @@ helm_install()
 
 kubectl_install()
 {
-    print_bgreen "Installing kubectl"
     URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/"$(get_architecture)"/kubectl
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
         URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/$(get_architecture_alt)/kubectl
     fi
-    curl -Lo /usr/local/bin/kubectl "${URL}"
+    curl -s -Lo /usr/local/bin/kubectl "${URL}"
     chmod +x /usr/local/bin/kubectl
 }
 
@@ -206,7 +200,7 @@ debian_init()
                     pkg-config \
                     procmail \
                     pylint \
-                    $(echo "python$(python3 --version | grep -oP '\d+\.\d+' | head -1)-venv") \
+                    python"$(python3 --version | grep -oP '\d+\.\d+' | head -1)-venv" \
                     python3-dev \
                     python3-pip \
                     redis-tools \
@@ -237,36 +231,59 @@ init() {
         if [ -f /etc/os-release ]; then
             source /etc/os-release
             if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
-                debian_init
+                print_bgreen "Installing os pkgs"
+                debian_init > os_pkg.log 2>&1
+                rm os_pkg.log
                 if [ $update ] || [ -z "$(command -v docker)" ]; then
+                    print_bgreen "Installing docker"
                     docker_install
                 fi
-
+                if [ $update ] || [ -z "$(command -v crane)" ]; then
+                    print_bgreen "Installing crane"
+                    crane_install > crane.log 2>&1
+                    rm crane.log
+                fi
                 if [ $update ] || [ -z "$(command -v tailscale)" ]; then
-                    tailscale_install
+                    print_bgreen "Installing tailscale"
+                    tailscale_install > tailscale.log 2>&1
+                    rm tailscale.log
                 fi
                 if [ $update ] || [ -z "$(command -v go)" ]; then
-                    go_install
+                    print_bgreen "Installing go"
+                    go_install > go.log 2>&1
+                    rm go.log
                 fi
                 if [ $update ] || [ -z "$(command -v helm)" ]; then
-                    helm_install
+                    print_bgreen "Installing helm"
+                    helm_install > helm.log 2>&1
+                    rm helm.log
                 fi
                 if [ $update ] || [ -z "$(command -v kind)" ]; then
-                    kind_install
+                    print_bgreen "Installing kind"
+                    kind_install > kind.log 2>&1
+                    rm kind.log
                 fi
                 if [ $update ] || [ -z "$(command -v yq)" ]; then
-                    yq_install
+                    print_bgreen "Installing yq"
+                    yq_install > yq.log 2>&1
+                    rm yq.log
                 fi
                 if [ $update ] || [ -z "$(command -v kubectl)" ]; then
-                    kubectl_install
+                    print_bgreen "Installing kubectl"
+                    kubectl_install > k8sctl.log 2>&1
+                    rm k8sctl.log
                 fi
                 if [ $update ] || [ -z "$(command -v aws)" ]; then
-                    aws_install
+                    print_bgreen "Installing aws cli"
+                    aws_install >aws.log 2>&1
+                    rm aws.log
                 fi
                 if [ $update ] || [ -z "$(command -v az)" ]; then
-                    az_install
+                    print_bgreen "Installing az cli"
+                    az_install > az.log 2>&1
                 fi
                 if [ $update ] || [ -z "$(command -v gcloud)" ]; then
+                    print_bgreen "Installing gcp cli"
                     #gcp_install
                     :
                 fi
