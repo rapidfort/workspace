@@ -50,12 +50,14 @@ crane_install()
     local version
     version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
     local os
-    local arch
     local url
 
     os=$(uname)
-    arch=$(get_architecture)
-    url="https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_${arch}.tar.gz"
+    url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture)".tar.gz
+    if ! curl --output /dev/null --silent --head --fail -L "${url}"; then
+        url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture_alt)".tar.gz
+    fi
+
     curl -sL "$url" > go-containerregistry.tar.gz
     tar -xzf go-containerregistry.tar.gz -C /usr/local/bin
     rm go-containerregistry.tar.gz
