@@ -179,3 +179,8 @@ if test -s $HOME/.my_aliases ; then
     source $HOME/.my_aliases
     set +a
 fi
+
+
+alias xglo=""
+alias xgdiff='git branch --all | sed "s/^[* ]*//" | fzf --preview "git log --color=always -p $(git rev-parse HEAD)..$(echo {} | sed \"s#remotes/##\")" --prompt \"Select branch to diff with HEAD: \" --preview-window=right:70%"'
+

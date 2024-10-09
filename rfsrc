@@ -48,8 +48,8 @@ network/rftunnel \
 network/rsock \
 network/sniffer \
 package-analyzer \
+platform \
 rapidfort \
-rapidfort-platform \
 rapidrisk \
 rfapi \
 rfproxy \
