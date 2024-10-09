@@ -85,11 +85,7 @@ techo() {
 }
 
 export -f techo
-if test -z "${FAST:-}"; then
-    export DEPTH="--depth 1"
-else
-    export DEPTH=
-fi
+
 set -x
 repo_pull_clone() {
     pushd "${HOME}"/rapidfort >/dev/null
@@ -100,12 +96,12 @@ repo_pull_clone() {
         # fetch all remote branches
         # checkout staging
         # pull all
-        (cd $repo && git stash && git checkout staging && git pull $DEPTH)
+        (cd $repo && git stash && git checkout staging && git pull)
     else
         if [[ "$repo" == *"network/"* ]] ; then
-            (cd network && git clone $DEPTH --branch staging ${RF_REPO_ROOT}/$(basename $repo))
+            (cd network && git clone --branch staging ${RF_REPO_ROOT}/$(basename $repo))
         else
-            git clone $DEPTH --branch staging ${RF_REPO_ROOT}/$repo
+            git clone --branch staging ${RF_REPO_ROOT}/$repo
         fi
     fi
     techo '<--'$repo;
