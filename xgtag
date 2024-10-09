@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git tag --sort=-creatordate | fzf --preview 'git show --color=always {}' | xargs git checkout
+
