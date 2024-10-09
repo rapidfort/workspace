@@ -85,7 +85,7 @@ techo() {
 }
 
 export -f techo
-if test -n "${FAST}"; then
+if test -z "${FAST:-}"; then
     export DEPTH="--depth 1"
 else
     export DEPTH=
