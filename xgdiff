@@ -1,4 +1,2 @@
 #!/bin/bash
 git diff $(git branch --all | fzf --prompt "Select first branch: ") $(git branch --all | fzf --prompt "Select second branch: ")
-
-

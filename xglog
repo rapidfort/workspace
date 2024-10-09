@@ -1,3 +1,2 @@
 #!/bin/bash
 git log --oneline | fzf --preview 'git show --color=always $(echo {} | cut -d" " -f1)'
-
