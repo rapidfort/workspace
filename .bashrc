@@ -43,6 +43,8 @@ fi
 
 if [ -f /root/.git-prompt.sh ]; then
   source /root/.git-prompt.sh
+elif [ -f /etc/bash_completion.d/git-prompt ]; then
+    source /etc/bash_completion.d/git-prompt
 fi
 
 export TERM=xterm-256color
