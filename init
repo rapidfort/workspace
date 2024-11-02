@@ -342,6 +342,21 @@ init() {
 
             if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
                 run_command debian_init
+                if [ "$ID" = "ubuntu" ]; then
+                    systemctl stop snapd || true
+                    systemctl disable snapd || true
+                    snap remove --purge $(snap list | awk 'NR>1 {print $1}') || true
+                    apt purge snapd -y || true
+                    rm -rf /var/cache/snapd
+                    rm -rf /var/snap
+                    rm -rf ~/snap
+                    systemctl stop multipathd || true
+                    systemctl disable multipathd || true
+                    apt purge multipath-tools -y
+                    rm -rf /etc/multipath
+                    rm -f /etc/multipath.conf
+                    update-initramfs -u
+                fi
             elif [ "$ID" = "rhel" ] || [ "$ID" = "centos" ] || [ "$ID" = "fedora" ]; then
                 run_command rhel_init
             else
@@ -396,6 +411,16 @@ init() {
         print_bred "NotSupported: $(get_os_str) $(get_architecture) To Do"
         exit 1
     fi
+
+    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
+    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
+    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
+    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
+    ln -svf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
+
+    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
+    cp rfdev /usr/local/bin/rfdev
+    cp -vf xd* /usr/local/bin
 }
 
 # Allow individual updates via command-line argument
