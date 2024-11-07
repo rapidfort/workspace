@@ -422,9 +422,17 @@ init() {
     cp rfdev /usr/local/bin/rfdev
     cp -vf xd* /usr/local/bin
 
-    cp -vf .* ~
+    cp -vf .bashrc ~
+    cp -vf .emacs  ~
+    cp -vf .pretty_print ~
+    cp -vf .pylintrc ~
+    cp -vf .user_data ~
+    cp -vf .bashrc.rfserver ~
+    cp -vf .kubectl_aliases ~
+    cp -vf .profile ~
+    cp -vf .screenrc ~
+    cp -vf .vimrc ~
     mkdir -p /root/rapidfort
-
 }
 
 # Allow individual updates via command-line argument
