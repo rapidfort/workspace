@@ -423,7 +423,6 @@ init() {
     cp -vf xd* /usr/local/bin
 
     cp -vf .* ~
-    cp -vf
     mkdir -p /root/rapidfort
 
 }
