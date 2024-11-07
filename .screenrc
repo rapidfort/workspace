@@ -54,16 +54,10 @@ screen -t rfp bash -c "cd /root/rapidfort/rfpubsub && exec bash"
 screen -t vul bash -c "cd /root/rapidfort/vulns-db && exec bash"
 screen -t rfs bash -c "cd /root/rapidfort/iso-master && exec bash"
 screen -t run bash -c "cd /root/rapidfort/runner && exec bash"
-screen -t log-key bash -c "module_log keycloak"
-
 screen -t k8s bash -c "cd /root/rapidfort/k8s-rf-monitor && exec bash"
-screen -t sta bash -c "cd /root/rapidfort/standalone && exec bash"
 screen -t pac bash -c "cd /root/rapidfort/package-analyzer && exec bash"
 screen -t cli bash -c "cd /root/rapidfort/rapidfort && exec bash"
 screen -t com bash -c "cd /root/rapidfort/common && exec bash"
 screen -t fun bash -c "cd /root/rapidfort/functional-tests && exec bash"
-
-screen -t platform bash -c "cd /root/rapidfort/rapidfort-platform && exec bash"
-screen -t test bash -c "cd /opt/rapidfort && exec bash"
+screen -t plat bash -c "cd /root/rapidfort/platform && exec bash"
 screen -t build bash -c "cd /root/rapidfort && exec bash"
-

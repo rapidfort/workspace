@@ -421,6 +421,11 @@ init() {
     ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
     cp rfdev /usr/local/bin/rfdev
     cp -vf xd* /usr/local/bin
+
+    cp -vf .* ~
+    cp -vf
+    mkdir -p /root/rapidfort
+
 }
 
 # Allow individual updates via command-line argument
