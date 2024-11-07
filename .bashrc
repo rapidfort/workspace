@@ -118,7 +118,12 @@ else
   export KCONTEXT=
 fi
 
-test -s /usr/share/bash-completion/bash_completion && source /usr/share/bash-completion/bash_completion || true
+if test -s /etc/bash_completion.d/git-prompt; then
+    source /etc/bash_completion.d/git-prompt
+else
+    test -s /usr/share/bash-completion/bash_completion && source /usr/share/bash-completion/bash_completion || true
+fi
+
 GIT_PS1_SHOWDIRTYSTATE=true
 GIT_PS1_SHOWUNTRACKEDFILES=true
 export PS1='\u@\h \w$(__git_ps1) \#'
