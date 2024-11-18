@@ -263,3 +263,4 @@ if test -s $HOME/.my_aliases ; then
 fi
 
 
+alias rftools="/root/rapidfort/functional-tests/helpers/install.sh"

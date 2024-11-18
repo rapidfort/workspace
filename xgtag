@@ -1,3 +1,4 @@
 #!/bin/bash
-
-git tag --sort=-creatordate | fzf --preview 'git show --color=always {}' | xargs git checkout
+git tag --sort=-creatordate | \
+    fzf --preview 'git show --color=always {}'  --bind 'j:down,k:up,ctrl-f:preview-down,ctrl-b:preview-up' \
+    | xargs git checkout
