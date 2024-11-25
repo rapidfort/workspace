@@ -44,7 +44,7 @@ set nohlsearch
 " remove trailing spaces from certain file types when saving. don't jump to last change when doing so.
 "autocmd FileType python,c,cpp,py,java,javascript,php autocmd BufWritePre <buffer> %s/\s\+$//e
 "autocmd FileType python,c,cpp,py,java,javascript,php autocmd BufWritePre * :mark `|%s/\s\+$//e|normal! ``
-autocmd FileType python,c,cpp,py,java,javascript,php,sh,dockerfile autocmd BufWritePre <buffer> :mark `|%s/\s\+$//e|normal! ``
+autocmd FileType python,c,cpp,py,java,javascript,php,sh,dockerfile,spec,control autocmd BufWritePre <buffer> :mark `|%s/\s\+$//e|normal! ``
 
 "autocmd FileType python compiler pylint3
 

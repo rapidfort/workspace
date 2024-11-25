@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Check if a search term is provided
+if [ -z "$1" ]; then
+  echo "Usage: $0 <search_term>"
+  exit 1
+fi
+
+if command -v rg >/dev/null; then
+    :
+else
+    apt update && apt install ripgrep -y
+fi
+
+if command -v batcat >/dev/null; then
+    :
+else
+    apt update && apt install bat -y
+fi
+
+
+# Start an infinite loop for repeated search-and-edit
+while true; do
+  # Run rg and fzf, capturing the selected line
+  selected=$(rg --line-number --no-heading --color=always "$1" | \
+    fzf --ansi \
+        --preview="batcat --style=numbers --color=always --highlight-line {2} {1}" \
+        --preview-window=right:50%:wrap \
+        --delimiter=":" \
+        --with-nth=1,2,3 \
+        --bind "enter:accept" \
+        --bind "esc:abort")
+
+  # Exit if no selection is made (e.g., if Esc is pressed)
+  if [ -z "$selected" ]; then
+    echo "Exiting."
+    break
+  fi
+
+  # Extract the file path and line number from the selected item
+  filepath=$(echo "$selected" | cut -d: -f1)
+  linenumber=$(echo "$selected" | cut -d: -f2)
+
+  # Open the file in vi at the specified line
+  vi +"$linenumber" "$filepath"
+done
+
