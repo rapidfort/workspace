@@ -3,15 +3,8 @@ set -o pipefail
 image="$1"
 cmd="$2"
 if [ -n "$image" ]; then
-    if [ -n "$cmd" ]; then
-        shift
-        docker run --rm --cap-add=SYS_PTRACE -it $image $@
-    else
-        docker run --rm --cap-add=SYS_PTRACE -it $image bash
-        if [ $? -ne 0 ]; then
-            docker run --rm --cap-add=SYS_PTRACE -it $image sh
-        fi
-    fi
+    shift
+    docker run --rm --cap-add=SYS_PTRACE -it $image $@
 else
     echo Container missing as arg
     exit 0
