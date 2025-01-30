@@ -9,13 +9,15 @@ HELM_RELEASE=v3.16.2
 
 source .pretty_print
 
-get_os_str() {
+get_os_str()
+{
     local _os
     _os="$(uname)"
     echo -n "$(echo "${_os}" | tr '[:upper:]' '[:lower:]')"
 }
 
-get_architecture() {
+get_architecture()
+{
     local _arch
     _arch="$(uname -m)"
     if [ "${_arch}" = "aarch64" ] || [ "${_arch}" = "arm64" ]; then
@@ -28,7 +30,8 @@ get_architecture() {
     fi
 }
 
-get_architecture_alt() {
+get_architecture_alt()
+{
     if [ "$(get_architecture)" = "arm64" ]; then
         echo -n "aarch64"
     else
@@ -36,50 +39,48 @@ get_architecture_alt() {
     fi
 }
 
-run_command() {
-  local subroutine="$1"
-  local full_log=""
-  local exit_status=0
+run_command()
+{
+    local subroutine="$1"
+    local full_log=""
+    local exit_status=0
 
-    print_bgreen $subroutine
-  # Use a while loop to capture output line-by-line in real-time
-  "$subroutine" 2>&1 | while IFS= read -r line || [[ -n "$line" ]]; do
-    full_log+="$line"$'\n'
-    # Update the current line with a carriage return to overwrite
-    echo -ne "\r$line"
-  done
+    print_bgreen "$subroutine"
 
-  # Capture the exit status of the subroutine
-  exit_status=${PIPESTATUS[0]}
+    # Use a while loop to capture output line-by-line in real-time
+    "$subroutine" 2>&1 | while IFS= read -r line || [[ -n "$line" ]]; do
+        full_log+="$line"$'\n'
+        echo -ne "\r$line"
+    done
 
-  # Check if the subroutine failed
-  if [[ $exit_status -ne 0 ]]; then
-    echo -e "\n\nError detected! Full log below:\n"
-    echo "$full_log"
-    return $exit_status
-  fi
+    exit_status=${PIPESTATUS[0]}
 
-  # Clear the line after success
-  echo -e "\n$subroutine executed successfully."
-  return 0
+    if [[ $exit_status -ne 0 ]]; then
+        echo -e "\n\nError detected! Full log below:\n"
+        echo "$full_log"
+        return $exit_status
+    fi
+
+    echo -e "\n$subroutine executed successfully."
+    return 0
 }
 
-# Installation subroutines
-tailscale_install() {
+tailscale_install()
+{
     curl -fsSL https://tailscale.com/install.sh | sh
     tailscale --version
 }
 
-crane_install() {
-    local version
-    version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
-    local os
-    local url
+crane_install()
+{
+    local version os url
 
+    version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
     os=$(uname)
-    url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture)".tar.gz
+    url="https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_$(get_architecture).tar.gz"
+
     if ! curl --output /dev/null --silent --head --fail -L "${url}"; then
-        url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture_alt)".tar.gz
+        url="https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_$(get_architecture_alt).tar.gz"
     fi
 
     curl -sL "$url" > go-containerregistry.tar.gz
@@ -88,7 +89,8 @@ crane_install() {
     crane version
 }
 
-docker_install() {
+docker_install()
+{
     rm -f get-docker.sh
     curl -fsSL https://get.docker.com -o get-docker.sh
     sh get-docker.sh
@@ -96,51 +98,62 @@ docker_install() {
     docker --version
 }
 
-aws_install() {
+aws_install()
+{
     rm -rf awscliv2.zip aws
-    URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture)".zip
+    URL="https://awscli.amazonaws.com/awscli-exe-linux-$(get_architecture).zip"
+
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture_alt)".zip
+        URL="https://awscli.amazonaws.com/awscli-exe-linux-$(get_architecture_alt).zip"
     fi
-    rm -rf awscliv2.zip
+
     curl -s -o "awscliv2.zip" "${URL}"
     unzip awscliv2.zip
+
     if command -v aws; then
         ./aws/install --update
     else
         ./aws/install
     fi
+
     rm -rf awscliv2.zip aws
     aws --version
 }
 
-az_install() {
+az_install()
+{
     curl -sL https://aka.ms/InstallAzureCLIDeb | bash
     az --version
 }
 
-gcp_install() {
+gcp_install()
+{
     export CLOUDSDK_CORE_DISABLE_PROMPTS=1
     rm -rf /root/google-cloud-sdk
     curl -sSL https://sdk.cloud.google.com | bash
     gcloud --version
 }
 
-go_install() {
-    URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+go_install()
+{
+    URL="https://go.dev/dl/go${GOLANG_RELEASE}.$(get_os_str)-$(get_architecture).tar.gz"
+
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture_alt)".tar.gz
+        URL="https://go.dev/dl/go${GOLANG_RELEASE}.$(get_os_str)-$(get_architecture_alt).tar.gz"
     fi
-    curl -Lo go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
-    rm -rf /usr/local/go && tar -C /usr/local -xzf go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
-    rm go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+
+    curl -Lo "go${GOLANG_RELEASE}.$(get_os_str)-$(get_architecture).tar.gz" "${URL}"
+    rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GOLANG_RELEASE}.$(get_os_str)-$(get_architecture).tar.gz"
+    rm "go${GOLANG_RELEASE}.$(get_os_str)-$(get_architecture).tar.gz"
     /usr/local/go/bin/go version
 }
 
-yq_install() {
-    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture)"
+yq_install()
+{
+    URL="https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_$(get_os_str)_$(get_architecture)"
+
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture_alt)"
+        URL="https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_$(get_os_str)_$(get_architecture_alt)"
     fi
 
     curl -s -Lo /usr/local/bin/yq "${URL}"
@@ -148,46 +161,37 @@ yq_install() {
     /usr/local/bin/yq --version
 }
 
-k3s_install() {
-#    curl -sfL https://get.k3s.io | sh -s - --disable traefik
-:
-}
+helm_install()
+{
+    URL="https://get.helm.sh/helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz"
 
-kind_install() {
-    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture)"
-    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture_alt)"
-    fi
-    curl -s -Lo /usr/local/bin/kind "${URL}"
-    chmod +x /usr/local/bin/kind
-    /usr/local/bin/kind version
-
-}
-
-helm_install() {
-    URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
     if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
-        URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture_alt)".tar.gz
+        URL="https://get.helm.sh/helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture_alt).tar.gz"
     fi
-    curl -s -Lo helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
-    tar zxvf helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
-    mv -vf "$(get_os_str)"-"$(get_architecture)"/helm /usr/local/bin
-    rm -rf "$(get_os_str)"-"$(get_architecture)"
-    rm -f helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
+
+    curl -s -Lo "helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz" "${URL}"
+    tar zxvf "helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz"
+    mv -vf "$(get_os_str)-$(get_architecture)/helm" /usr/local/bin
+    rm -rf "$(get_os_str)-$(get_architecture)"
+    rm -f "helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz"
     /usr/local/bin/helm version
 }
 
-kubectl_install() {
-    URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/"$(get_architecture)"/kubectl
+kubectl_install()
+{
+    URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/$(get_os_str)/$(get_architecture)/kubectl"
+
     if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
-        URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/$(get_architecture_alt)/kubectl
+        URL="https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/$(get_os_str)/$(get_architecture_alt)/kubectl"
     fi
+
     curl -s -Lo /usr/local/bin/kubectl "${URL}"
     chmod +x /usr/local/bin/kubectl
     /usr/local/bin/kubectl version || true
 }
 
-websocat_install() {
+websocat_install()
+{
     if [[ "$(get_architecture_alt)" == "aarch64" || "$(get_architecture)" == "arm64" ]]; then
         echo skip installing websocat
     else
@@ -204,7 +208,8 @@ websocat_install() {
 }
 
 # OS-specific initialization for Debian-based systems
-debian_init() {
+debian_init()
+{
     export TZ="/usr/share/zoneinfo/America/Los_Angeles"
     export LC_ALL="C"
     export DEBIAN_FRONTEND=noninteractive
@@ -276,7 +281,8 @@ debian_init() {
 }
 
 # OS-specific initialization for RHEL-based systems
-rhel_init() {
+rhel_init()
+{
     # Update the system and enable EPEL for additional packages
     yum update -y
     yum install -y \
@@ -338,7 +344,8 @@ rhel_init() {
         zlib-devel
 }
 
-init() {
+init()
+{
     local update
     if [ "$1" = "update" ]; then
         update=true
@@ -421,15 +428,8 @@ init() {
         exit 1
     fi
 
-    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
-    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
-    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
-    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
-    ln -svf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
-
-    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
     cp rfdev /usr/local/bin/rfdev
-    cp -vf xd* /usr/local/bin
+    cp -vf x* /usr/local/bin
 
     cp -vf .bashrc ~
     cp -vf .emacs  ~
@@ -443,6 +443,79 @@ init() {
     cp -vf .vimrc ~
     mkdir -p /root/rapidfort
     cp -vf RF_* /root/rapidfort
+}
+
+setup_local_registry()
+{
+    export REGISTRY_NAME="${RF_APP_HOST}:5000"
+
+    print_bgreen "Allow insecure registry"
+
+    if ! test -s "/etc/docker/daemon.json"; then
+        echo "{}" > "/etc/docker/daemon.json"
+    fi
+
+    cp -f /etc/docker/daemon.json /etc/docker/daemon.json.org
+
+    cat /etc/docker/daemon.json | jq --arg REGISTRY_NAME "${REGISTRY_NAME}" \
+        '."insecure-registries"|=( . + [$REGISTRY_NAME] | unique)' | tee /etc/docker/daemon.json.new
+
+    if diff /etc/docker/daemon.json.new /etc/docker/daemon.json.org; then
+        print_bgreen "No need to start docker"
+    else
+        print_bgreen "Restarting docker"
+        cp -f /etc/docker/daemon.json.new /etc/docker/daemon.json
+        service docker restart
+    fi
+
+    test -s kind/kind-config.yaml || cp -vf kind/kind-config.yaml.template kind/kind-config.yaml
+    export OLDIP=$(grep :5000 kind/kind-config.yaml | sed "s=:5000.*==g" | rev | sed 's/[^0123456789.].*//' | rev | sort | uniq | head -1)
+    sed -i "s=${OLDIP}:5000=${RF_APP_HOST}:5000=g" kind/kind-config.yaml
+
+    export SUCCESS=0
+    export RETRIES=8
+
+    while [ ${RETRIES} -gt 0 ]; do
+        echo "Create cluster platform"
+        if kind create cluster --name platform --config kind/kind-config.yaml --wait 8m; then
+            export SUCCESS=1
+            export RETRIES=0
+        else
+            print_bred "kind create cluster failed, sleeping, retrying..."
+            sleep 8
+            export RETRIES=$(( RETRIES - 1 ))
+        fi
+    done
+
+    if [ "$SUCCESS" = "0" ]; then
+        print_bred "Unfortunately, all retries failed: kind create cluster"
+        exit 1
+    fi
+
+    echo "Setup local registry"
+    if test ! -d common/registry/certs; then
+        print_bgreen "Generating certs"
+        mkdir -p common/registry/certs
+        openssl req \
+            -newkey rsa:4096 -nodes -sha256 -keyout common/registry/certs/registry.key \
+            -addext "subjectAltName = IP:$RF_APP_HOST" \
+            -x509 -days 3650 -out common/registry/certs/registry.crt \
+            -subj "/C=US/ST=CA/L=SANFRANCISCO/O=RapidFort Inc/OU=Engineering/CN=rapidfort.com"
+
+        if [ -f /etc/redhat-release ]; then
+            [ -d "/etc/pki/ca-trust/source/whitelist" ] || mkdir -p "/etc/pki/ca-trust/source/whitelist"
+            cp -vf common/registry/certs/registry.crt /etc/pki/ca-trust/source/whitelist/registry.crt
+            update-ca-trust
+        else
+            cp -vf common/registry/certs/registry.crt /usr/local/share/ca-certificates/registry.crt
+            update-ca-certificates
+        fi
+    fi
+}
+
+deploy_bpf_agent()
+{
+    :
 }
 
 # Allow individual updates via command-line argument
@@ -469,3 +542,6 @@ if [ -n "$1" ]; then
 else
     init
 fi
+
+setup_local_registry
+deploy_bpf_agent
