@@ -413,9 +413,9 @@ init()
             if [ $update ] || [ -z "$(command -v websocat)" ]; then
                 run_command websocat_install
             fi
-            if [ $update ] || [ -z "$(command -v k3s_install)" ]; then
-                run_command k3s_install
-            fi
+            # if [ $update ] || [ -z "$(command -v k3s_install)" ]; then
+            #     run_command k3s_install
+            # fi
             #if [ $update ] || [ -z "$(command -v gcloud)" ]; then
             #    run_command gcp_install
             #fi
