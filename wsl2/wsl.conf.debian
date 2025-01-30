@@ -1,7 +1,0 @@
-[boot]
-systemd=true
-[user]
-default=root
-[network]
-hostname = debian
-generateHosts = false
