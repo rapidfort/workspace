@@ -1,5 +1,0 @@
-[user]
-default=root
-[network]
-hostname = alpine
-generateHosts = false
