@@ -173,6 +173,19 @@ yq_install()
     /usr/local/bin/yq --version
 }
 
+kind_install()
+{
+    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture)"
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture_alt)"
+    fi
+    curl -s -Lo /usr/local/bin/kind "${URL}"
+    chmod +x /usr/local/bin/kind
+    /usr/local/bin/kind version
+
+}
+
+
 helm_install()
 {
     URL="https://get.helm.sh/helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz"
