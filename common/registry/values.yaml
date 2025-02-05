@@ -1,0 +1,15 @@
+replicaCount: 1
+image:
+  repository: registry
+  pullPolicy: IfNotPresent
+  tag: "2"
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources: {}
+autoscaling: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
