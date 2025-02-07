@@ -16,6 +16,15 @@ fi
 
 echo "RF_CRAFT_HOST is set to: ${RF_CRAFT_HOST}"
 
+if [[ -z "${RF_APP_HOST}" ]]; then
+    echo "Error: RF_APP_HOST is not set. RF_APP_HOST can be production us01.rapidfort.com, or IP address of platform"
+    exit 1
+fi
+echo "RF_APP_HOST is set to: ${RF_APP_HOST}"
+
+
+echo "RF_CRAFT_HOST is set to: ${RF_CRAFT_HOST}"
+
 if [[ -z "${QUAY_CRAFT}" ]]; then
     echo "Error: QUAY_CRAFT is not set. Exiting..."
     exit 1
@@ -563,6 +572,11 @@ setup_craft()
     helm upgrade --install rapidfort oci://quay.io/rapidfort/runtime -f override.yaml
 }
 
+install_cli()
+{
+    curl -ks https://${RF_APP_HOST}/cli | bash
+}
+
 # Allow individual updates via command-line argument
 if [ -n "$1" ]; then
     case "$1" in
@@ -583,10 +597,12 @@ if [ -n "$1" ]; then
         k3s) run_command k3s_install ;;
         update) init "update" ;;
         init) setup_craft ;;
+        cli) install_cli ;;
         *) echo "Unknown command: $1" ;;
     esac
 else
     init
     setup_craft
+    install_cli
 fi
 
