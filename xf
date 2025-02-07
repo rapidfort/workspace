@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Check if a search term is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <search_term>"
+# Ensure at least one argument (search string) is provided
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <search_string> [optional_filename_pattern] [optional_exclude_files_pattern]"
   exit 1
 fi
 
@@ -19,10 +19,34 @@ else
 fi
 
 
+search_string="$1"
+filename_pattern="${2:-}"  # Filename pattern to search in (optional)
+exclude_pattern="${3:-}"   # Exclusion pattern (optional)
+
 # Start an infinite loop for repeated search-and-edit
 while true; do
-  # Run rg and fzf, capturing the selected line
-  selected=$(rg --line-number --no-heading --color=always "$1" | \
+  # Find files to search in
+  if [ -n "$filename_pattern" ]; then
+    # Search only in files matching the filename pattern
+    files=$(find . -type f -name "*$filename_pattern*")
+  else
+    # Search in all files
+    files=$(find . -type f)
+  fi
+
+  # Exclude files if an exclusion pattern is provided
+  if [ -n "$exclude_pattern" ]; then
+    files=$(echo "$files" | grep -v "$exclude_pattern")
+  fi
+
+  # Ensure we have files to search in
+  if [ -z "$files" ]; then
+    echo "No matching files found!"
+    exit 1
+  fi
+
+  # Run rg within the selected files and allow fzf to choose a result
+  selected=$(echo "$files" | xargs rg --line-number --no-heading --color=always "$search_string" | \
     fzf --ansi \
         --preview="batcat --style=numbers --color=always --highlight-line {2} {1}" \
         --preview-window=right:50%:wrap \
@@ -31,7 +55,7 @@ while true; do
         --bind "enter:accept" \
         --bind "esc:abort")
 
-  # Exit if no selection is made (e.g., if Esc is pressed)
+  # Exit if no selection is made (e.g., Esc is pressed)
   if [ -z "$selected" ]; then
     echo "Exiting."
     break
@@ -44,4 +68,3 @@ while true; do
   # Open the file in vi at the specified line
   vi +"$linenumber" "$filepath"
 done
-
