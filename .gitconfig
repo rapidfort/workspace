@@ -1,0 +1,8 @@
+[user]
+	email = rajeev@rapidfort.com
+	name = Rajeev Thakur
+[pull]
+	rebase = false
+
+[safe]
+	directory = /root/rapidfort/curated_images/apps/mitre/vulcan/2.1/debian/bookworm/app
