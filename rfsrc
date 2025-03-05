@@ -32,11 +32,12 @@ arpoke \
 backend \
 bpf \
 common \
-curated_images \
+curated \
 documentation \
 file_access \
 fileupload \
 frontrow \
+frontrow-pulse \
 functional-tests \
 infrastructure \
 integrations \
@@ -60,6 +61,7 @@ rftrace \
 rfvdb \
 rollout \
 runner \
+sense \
 standalone \
 strace \
 system-call-tests \

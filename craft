@@ -259,6 +259,7 @@ debian_init()
         default-mysql-client \
         emacs-nox \
         ethtool \
+        expect \
         flex \
         fzf \
         git \
@@ -291,7 +292,6 @@ debian_init()
         screen \
         shc \
         shellcheck \
-        sl \
         socat \
         strace \
         sudo \
@@ -299,6 +299,7 @@ debian_init()
         tcpdump \
         time \
         tmux \
+        units \
         unzip \
         vim \
         wget
