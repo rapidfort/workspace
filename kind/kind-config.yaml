@@ -2,9 +2,9 @@ apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 containerdConfigPatches:
 - |-
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."100.127.107.7:5000"]
-    endpoint = ["https://100.127.107.7:5000"]
-  [plugins."io.containerd.grpc.v1.cri".registry.configs."100.127.107.7:5000".tls]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."jfips:5000"]
+    endpoint = ["https://jfips:5000"]
+  [plugins."io.containerd.grpc.v1.cri".registry.configs."jfips:5000".tls]
     insecure_skip_verify = true
 nodes:
   - role: control-plane
