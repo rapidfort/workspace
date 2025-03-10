@@ -296,6 +296,7 @@ debian_init()
         strace \
         sudo \
         swig \
+        telnet \
         tcpdump \
         time \
         tmux \
