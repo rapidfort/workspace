@@ -185,7 +185,6 @@ kind_install()
 
 }
 
-
 helm_install()
 {
     URL="https://get.helm.sh/helm-${HELM_RELEASE}-$(get_os_str)-$(get_architecture).tar.gz"
@@ -379,11 +378,10 @@ init()
 
     if [ "$(get_os_str)" = "linux" ]; then
         if [ -f /etc/os-release ]; then
-
             source /etc/os-release
-
-            if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
+            if [ "$ID" = "debian" ] || [ "$ID" = "devuan" ] || [ "$ID" = "ubuntu" ]; then
                 run_command debian_init
+
                 if [ "$ID" = "ubuntu" ]; then
                     if command -v snap &>/dev/null; then
                         systemctl stop snapd || true
@@ -411,13 +409,24 @@ init()
             fi
 
             if [ $update ] || [ -z "$(command -v docker)" ]; then
-                run_command docker_install
+                if [ "$ID" = "devuan" ]; then
+                    mkdir -p /etc/apt/keyrings
+                    curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+                    chmod a+r /etc/apt/keyrings/docker.asc
+                    echo "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                    apt update
+                    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+		        else
+                    run_command docker_install
+                fi
             fi
+
             if [ $update ] || [ -z "$(command -v crane)" ]; then
                 run_command crane_install
             fi
             if [ $update ] || [ -z "$(command -v tailscale)" ]; then
-                run_command tailscale_install
+                #run_command tailscale_install
+		        :
             fi
             if [ $update ] || [ -z "$(command -v go)" ]; then
                 run_command go_install
@@ -438,7 +447,8 @@ init()
                 run_command aws_install
             fi
             if [ $update ] || [ -z "$(command -v az)" ]; then
-                run_command az_install
+                #run_command az_install
+		        :
             fi
             if [ $update ] || [ -z "$(command -v websocat)" ]; then
                 run_command websocat_install

@@ -230,6 +230,7 @@ debian_init() {
         default-mysql-client \
         emacs-nox \
         ethtool \
+        expect \
         flex \
         fzf \
         git \
@@ -262,15 +263,16 @@ debian_init() {
         screen \
         shc \
         shellcheck \
-        sl \
         socat \
         strace \
         sudo \
         swig \
         tcpdump \
+        telnet \
         time \
         tmux \
         unzip \
+        units \
         vim \
         wget
 }
@@ -349,7 +351,7 @@ init() {
 
             source /etc/os-release
 
-            if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ]; then
+            if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ] || [ "$ID" = "devuan" ]; then
                 run_command debian_init
                 if [ "$ID" = "ubuntu" ]; then
                     systemctl stop snapd || true
@@ -374,13 +376,24 @@ init() {
             fi
 
             if [ $update ] || [ -z "$(command -v docker)" ]; then
-                run_command docker_install
+                if [ "$ID" = "devuan" ]; then
+                    mkdir -p /etc/apt/keyrings
+                    curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+                    chmod a+r /etc/apt/keyrings/docker.asc
+                    echo "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                    apt update
+                    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+		        else
+                    run_command docker_install
+                fi
             fi
+            
             if [ $update ] || [ -z "$(command -v crane)" ]; then
                 run_command crane_install
             fi
             if [ $update ] || [ -z "$(command -v tailscale)" ]; then
-                run_command tailscale_install
+                :
+                #run_command tailscale_install
             fi
             if [ $update ] || [ -z "$(command -v go)" ]; then
                 run_command go_install
@@ -401,13 +414,15 @@ init() {
                 run_command aws_install
             fi
             if [ $update ] || [ -z "$(command -v az)" ]; then
-                run_command az_install
+                :
+                # run_command az_install
             fi
             if [ $update ] || [ -z "$(command -v websocat)" ]; then
                 run_command websocat_install
             fi
             if [ $update ] || [ -z "$(command -v k3s_install)" ]; then
-                run_command k3s_install
+                :
+                #run_command k3s_install
             fi
             #if [ $update ] || [ -z "$(command -v gcloud)" ]; then
             #    run_command gcp_install
