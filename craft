@@ -403,7 +403,7 @@ init()
                     apt-get purge cloud-init -y || true
                     rm -rf /etc/cloud /var/lib/cloud
                     update-initramfs -u
-                    mkdir -p /etc/could
+                    mkdir -p /etc/cloud
                     touch /etc/cloud/cloud-init.disabled
                 fi
             elif [ "$ID" = "rhel" ] || [ "$ID" = "centos" ] || [ "$ID" = "fedora" ]; then
