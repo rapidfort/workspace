@@ -400,6 +400,11 @@ init()
                         rm -f /etc/multipath.conf
                         update-initramfs -u
                    fi
+                    apt-get purge cloud-init -y || true
+                    rm -rf /etc/cloud /var/lib/cloud
+                    update-initramfs -u
+                    mkdir -p /etc/could
+                    touch /etc/cloud/cloud-init.disabled
                 fi
             elif [ "$ID" = "rhel" ] || [ "$ID" = "centos" ] || [ "$ID" = "fedora" ]; then
                 run_command rhel_init
@@ -600,5 +605,12 @@ if [ -n "$1" ]; then
 else
     init
     setup_craft
+    if command -v yq >/dev/null 2>&1; then
+        yq eval '.imagePullSecrets[0].name = strenv(QUAY_CRAFT)' -i override.yaml
+        echo "Successfully updated imagePullSecrets[0].name to '$QUAY_CRAFT' in override.yaml"
+    else
+        echo "Error: yq is not installed. Please install yq from https://github.com/mikefarah/yq"
+        exit 1
+    fi
 fi
 
