@@ -644,10 +644,10 @@ else
     init
     setup_craft
     if command -v yq >/dev/null 2>&1; then
-        yq eval '.imagePullSecrets[0].name = strenv(QUAY_CRAFT)' -i override.yaml
-        echo "Successfully updated imagePullSecrets[0].name to '$QUAY_CRAFT' in override.yaml"
+        yq eval '.imagePullSecrets = strenv(QUAY_CRAFT)' -i override.yaml
+        echo "Successfully updated imagePullSecrets to '$QUAY_CRAFT' in override.yaml"
     else
-        echo "Error: yq is not installed. Please install yq from https://github.com/mikefarah/yq"
+        echo "Error: yq is not installed"
         exit 1
     fi
 fi
