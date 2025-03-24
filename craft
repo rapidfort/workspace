@@ -2,10 +2,10 @@
 # shellcheck disable=SC1091
 
 # Oct 26
-YQ_RELEASE=v4.44.6
-KIND_RELEASE=v0.26.0
-GOLANG_RELEASE=1.23.3
-HELM_RELEASE=v3.17.0
+YQ_RELEASE=v4.45.1
+KIND_RELEASE=v0.27.0
+GOLANG_RELEASE=1.24.0
+HELM_RELEASE=v3.17.2
 
 source .pretty_print
 
@@ -230,6 +230,42 @@ websocat_install()
     fi
 }
 
+sysctl_setup()
+{
+   
+    # Custom sysctl configuration file
+    CONF_FILE="/etc/sysctl.d/99-custom.conf"
+
+    # Parameters to add
+    PARAMS=(
+    "vm.vfs_cache_pressure=50"
+    "fs.inotify.max_user_watches=524288"
+    "vm.swappiness=10"
+    "kernel.panic=1"
+    )
+
+    # Create the file if it doesn't exist
+    if [ ! -f "$CONF_FILE" ]; then
+        echo "Creating $CONF_FILE"
+        touch "$CONF_FILE"
+    fi
+
+    for param in "${PARAMS[@]}"; do
+        if grep -Fxq "$param" "$CONF_FILE"; then
+            echo "Parameter '$param' is already present."
+        else
+            echo "Adding parameter '$param' to $CONF_FILE."
+            echo "$param" | sudo tee -a "$CONF_FILE" > /dev/null
+        fi
+    done
+
+    echo "Reloading sysctl settings..."
+    sysctl --system
+
+    echo "Done."
+
+}
+
 # OS-specific initialization for Debian-based systems
 debian_init()
 {
@@ -400,6 +436,11 @@ init()
                         rm -f /etc/multipath.conf
                         update-initramfs -u
                    fi
+                    apt-get purge cloud-init -y || true
+                    rm -rf /etc/cloud /var/lib/cloud
+                    update-initramfs -u
+                    mkdir -p /etc/cloud
+                    touch /etc/cloud/cloud-init.disabled
                 fi
             elif [ "$ID" = "rhel" ] || [ "$ID" = "centos" ] || [ "$ID" = "fedora" ]; then
                 run_command rhel_init
@@ -595,10 +636,19 @@ if [ -n "$1" ]; then
         k3s) run_command k3s_install ;;
         update) init "update" ;;
         init) setup_craft ;;
+        sysctl_setup) sysctl_setup ;;
         *) echo "Unknown command: $1" ;;
     esac
 else
+    sysctl_setup
     init
     setup_craft
+    if command -v yq >/dev/null 2>&1; then
+        yq eval '.imagePullSecrets = strenv(QUAY_CRAFT)' -i override.yaml
+        echo "Successfully updated imagePullSecrets to '$QUAY_CRAFT' in override.yaml"
+    else
+        echo "Error: yq is not installed"
+        exit 1
+    fi
 fi
 
