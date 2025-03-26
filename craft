@@ -254,6 +254,10 @@ sysctl_setup()
 * $HARD
 EOF
     fi
+
+    echo "session required pam_limits.so" | tee -a /etc/pam.d/common-session
+    echo "session required pam_limits.so" | tee -a /etc/pam.d/common-session-noninteractive
+
     # Custom sysctl configuration file
     CONF_FILE="/etc/sysctl.d/99-custom.conf"
 
