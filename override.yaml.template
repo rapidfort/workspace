@@ -1,0 +1,2 @@
+imagePullSecrets: 
+image: "quay.io/rapidfort/rf-bpf:1.0.25-52f4d50-84"

@@ -9,6 +9,7 @@ HELM_RELEASE=v3.17.2
 
 source .pretty_print
 
+
 if [[ -z "${RF_CRAFT_HOST}" ]]; then
     echo "Error: RF_CRAFT_HOST is not set. VM's internal or external ip address. Exiting..."
     exit 1
@@ -19,6 +20,12 @@ echo "RF_CRAFT_HOST is set to: ${RF_CRAFT_HOST}"
 if [[ -z "${QUAY_CRAFT}" ]]; then
     echo "Error: QUAY_CRAFT is not set. Exiting..."
     exit 1
+fi
+
+if test -s override.yaml; then
+    echo "override.yaml exists"
+else
+    cp -vf override.yaml.template override.yaml
 fi
 
 get_os_str()
@@ -232,7 +239,21 @@ websocat_install()
 
 sysctl_setup()
 {
-   
+    LIMITS_FILE="/etc/security/limits.d/99-nofile.conf"
+    SOFT="soft nofile 65535"
+    HARD="hard nofile 65535"
+
+    # Idempotent write: only write if file is missing or doesn't contain the settings
+    if grep -qE "^\* +soft +nofile" "$LIMITS_FILE" 2>/dev/null && \
+        grep -qE "^\* +hard +nofile" "$LIMITS_FILE" 2>/dev/null; then
+        echo "[INFO] System-wide nofile limit already set in $LIMITS_FILE"
+    else
+        echo "[INFO] Setting system-wide nofile limit in $LIMITS_FILE"
+    tee "$LIMITS_FILE" > /dev/null <<EOF
+* $SOFT
+* $HARD
+EOF
+    fi
     # Custom sysctl configuration file
     CONF_FILE="/etc/sysctl.d/99-custom.conf"
 
