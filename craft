@@ -523,6 +523,7 @@ init()
 
 setup_cli()
 {
+    unset RF_APP_HOST
     print_bgreen "Installing latest RapidFort CLI (preproduction)"
     print_bgreen "Edit $HOME/.rapidfort/credential for rf_root_url pointing to custom platform"
 
