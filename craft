@@ -526,7 +526,7 @@ setup_cli()
     print_bgreen "Installing latest RapidFort CLI (preproduction)"
     print_bgreen "Edit $HOME/.rapidfort/credential for rf_root_url pointing to custom platform"
 
-    curl -sL https://preprod.azure.rapidfort.io/install.sh | bash
+    curl -sL https://preprod.azure.rapidfort.io/cli | bash
 
     print_bgreen "Authenticating RapidFort CLI & run rfruntime & follow the instructions"
 }
