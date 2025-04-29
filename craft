@@ -16,11 +16,6 @@ fi
 
 echo "RF_CRAFT_HOST is set to: ${RF_CRAFT_HOST}"
 
-if [[ -z "${QUAY_CRAFT}" ]]; then
-    echo "Error: QUAY_CRAFT is not set. Exiting..."
-    exit 1
-fi
-
 get_os_str()
 {
     local _os
@@ -526,6 +521,16 @@ init()
     cp -vf RF_* /root/rapidfort
 }
 
+setup_cli()
+{
+    print_bgreen "Installing latest RapidFort CLI (preproduction)"
+    print_bgreen "Edit $HOME/.rapidfort/credential for rf_root_url pointing to custom platform"
+
+    curl -sL https://preprod.azure.rapidfort.io/install.sh | bash
+
+    print_bgreen "Authenticating RapidFort CLI & run rfruntime & follow the instructions"
+}
+
 setup_craft()
 {
     export REGISTRY_NAME="${RF_CRAFT_HOST}:5000"
@@ -611,9 +616,6 @@ setup_craft()
         helm upgrade --install registry registry --wait --timeout 1200s
     popd
 
-    sed -i "s|^imagePullSecrets: .*|imagePullSecrets: ${QUAY_CRAFT}|" override.yaml
-
-    helm upgrade --install rapidfort oci://quay.io/rapidfort/runtime -f override.yaml
 }
 
 # Allow individual updates via command-line argument
@@ -637,18 +639,13 @@ if [ -n "$1" ]; then
         update) init "update" ;;
         init) setup_craft ;;
         sysctl_setup) sysctl_setup ;;
+        cli) setup_cli ;;
         *) echo "Unknown command: $1" ;;
     esac
 else
     sysctl_setup
     init
     setup_craft
-    if command -v yq >/dev/null 2>&1; then
-        yq eval '.imagePullSecrets = strenv(QUAY_CRAFT)' -i override.yaml
-        echo "Successfully updated imagePullSecrets to '$QUAY_CRAFT' in override.yaml"
-    else
-        echo "Error: yq is not installed"
-        exit 1
-    fi
+    setup_cli
 fi
 
