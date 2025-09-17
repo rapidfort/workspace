@@ -1,16 +1,17 @@
 #!/bin/bash -e
 # shellcheck disable=SC1091
 
-# May 19, 2025
-YQ_RELEASE=v4.45.1
+# Sep 16, 2025
+YQ_RELEASE=v4.47.2
+# Please dont upgrade kind. It have a problem with registry
 KIND_RELEASE=v0.26.0
-GOLANG_RELEASE=1.24.0
-HELM_RELEASE=v3.17.2
+GOLANG_RELEASE=1.25.1
+HELM_RELEASE=v3.19.0
 
 source .pretty_print
 
-if [[ -z "${RF_CRAFT_HOST}" ]]; then
-    echo "Error: RF_CRAFT_HOST is not set. VM's internal or external ip address. Exiting..."
+if [[ -z "${RF_CRAFT_HOST}" ]] && [[ -z "${RF_APP_HOST}" ]] ; then
+    echo "Error: RF_CRAFT_HOST or RF_APP_HOST is not set. VM's internal or external ip address. Exiting..."
     exit 1
 fi
 
@@ -227,7 +228,7 @@ websocat_install()
 
 sysctl_setup()
 {
-   
+
     # Custom sysctl configuration file
     CONF_FILE="/etc/sysctl.d/99-custom.conf"
 
@@ -320,7 +321,6 @@ debian_init()
         redis-tools \
         rsync \
         screen \
-        shc \
         shellcheck \
         socat \
         strace \
@@ -385,7 +385,6 @@ rhel_init()
         redis \
         ripgrep \
         screen \
-        shc \
         shellcheck \
         socat \
         strace \
@@ -504,7 +503,6 @@ init()
         exit 1
     fi
 
-    cp rfdev /usr/local/bin/rfdev
     cp -vf x* /usr/local/bin
 
     cp -vf .bashrc ~
@@ -519,6 +517,15 @@ init()
     cp -vf .vimrc ~
     mkdir -p /root/rapidfort
     cp -vf RF_* /root/rapidfort
+
+    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
+    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
+    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
+    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
+    ln -svf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
+
+    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
+    cp rfdev /usr/local/bin/rfdev
 }
 
 setup_cli()

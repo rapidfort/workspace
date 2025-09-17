@@ -1,47 +1,175 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Check if a search term is provided
-if [ -z "$1" ]; then
-  echo "Usage: $0 <search_term>"
-  exit 1
+# Initialize variables with defaults
+SEARCH_PATH="."
+SEARCH_TERM=""
+FILE_PATTERNS=()
+EXCLUDE_PATTERNS=()
+EXCLUDE_DIRS=()
+
+# Function to install dependencies based on OS
+install_dependencies() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS - use Homebrew
+        if ! command -v brew >/dev/null; then
+            echo "Homebrew is required. Please install from https://brew.sh/"
+            exit 1
+        fi
+
+        if ! command -v rg >/dev/null; then
+            echo "Installing ripgrep..."
+            brew install ripgrep
+        fi
+
+        if ! command -v bat >/dev/null; then
+            echo "Installing bat..."
+            brew install bat
+        fi
+
+        if ! command -v fzf >/dev/null; then
+            echo "Installing fzf..."
+            brew install fzf
+        fi
+
+        # On Mac, 'bat' is the command (not 'batcat')
+        BAT_CMD="bat"
+    else
+        # Linux - assume Debian/Ubuntu
+        if ! command -v rg >/dev/null; then
+            echo "Installing ripgrep..."
+            sudo apt update && sudo apt install -y ripgrep
+        fi
+
+        if ! command -v batcat >/dev/null; then
+            echo "Installing bat..."
+            sudo apt update && sudo apt install -y bat
+        fi
+
+        if ! command -v fzf >/dev/null; then
+            echo "Installing fzf..."
+            sudo apt update && sudo apt install -y fzf
+        fi
+
+        # On Debian/Ubuntu, 'batcat' is the command
+        BAT_CMD="batcat"
+    fi
+}
+
+# Function to display usage
+show_usage() {
+    echo "Usage: $(basename "$0") [options] <search_term> [additional_patterns...]"
+    echo
+    echo "Options:"
+    echo "  -p <path>      Search in specific path (default: current directory)"
+    echo "  -f <pattern>   Include/exclude file pattern (prefix with ! to exclude)"
+    echo "  -x <string>    Exclude directories containing this string"
+    echo "  -h, --help     Show this help message"
+    echo
+    echo "Examples:"
+    echo "  $(basename "$0") abcd                         # Search for 'abcd' in current directory"
+    echo "  $(basename "$0") -p /xyz abcd                 # Search for 'abcd' in /xyz directory"
+    echo "  $(basename "$0") abcd '!RF_APP_HOST'          # Search for 'abcd' excluding 'RF_APP_HOST'"
+    echo "  $(basename "$0") -p /xyz abcd -f Dockerfile$  # Search only in Dockerfile"
+    echo "  $(basename "$0") abcd -f '!Dockerfile' -f '!build.sh'  # Exclude Dockerfile and build.sh"
+    echo "  $(basename "$0") -p /xyz -x focal abcd        # Search in /xyz excluding folders with 'focal'"
+    exit 1
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p)
+            SEARCH_PATH="$2"
+            shift 2
+            ;;
+        -f)
+            if [[ "$2" == \!* ]]; then
+                # Extract pattern without the leading !
+                pattern="${2:1}"
+                EXCLUDE_PATTERNS+=("$pattern")
+            else
+                FILE_PATTERNS+=("$2")
+            fi
+            shift 2
+            ;;
+        -x)
+            # Add directory exclusion pattern
+            EXCLUDE_DIRS+=("$2")
+            shift 2
+            ;;
+        -h|--help)
+            show_usage
+            ;;
+        *)
+            if [[ -z "$SEARCH_TERM" ]]; then
+                SEARCH_TERM="$1"
+            elif [[ "$1" == \!* ]]; then
+                # Additional exclude pattern
+                pattern="${1:1}"
+                EXCLUDE_PATTERNS+=("$pattern")
+            else
+                # Additional include pattern
+                FILE_PATTERNS+=("$1")
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Check if search term is provided
+if [[ -z "$SEARCH_TERM" ]]; then
+    echo "Error: No search term provided"
+    show_usage
 fi
 
-if command -v rg >/dev/null; then
-    :
-else
-    apt update && apt install ripgrep -y
-fi
+# Install dependencies
+install_dependencies
 
-if command -v batcat >/dev/null; then
-    :
-else
-    apt update && apt install bat -y
-fi
+# Build the ripgrep command
+RG_CMD="rg --line-number --color=always --colors 'match:fg:blue' --no-heading"
 
+# Add file patterns
+for pattern in "${FILE_PATTERNS[@]}"; do
+    RG_CMD+=" --glob '$pattern'"
+done
+
+# Add exclude patterns
+for pattern in "${EXCLUDE_PATTERNS[@]}"; do
+    RG_CMD+=" --glob '!$pattern'"
+done
+
+# Add exclude directories
+for dir in "${EXCLUDE_DIRS[@]}"; do
+    RG_CMD+=" -g '!*$dir*'"
+done
 
 # Start an infinite loop for repeated search-and-edit
 while true; do
-  # Run rg and fzf, capturing the selected line
-  selected=$(rg --line-number --no-heading --color=always "$1" | \
-    fzf --ansi \
-        --preview="batcat --style=numbers --color=always --highlight-line {2} {1}" \
-        --preview-window=right:50%:wrap \
-        --delimiter=":" \
-        --with-nth=1,2,3 \
-        --bind "enter:accept" \
-        --bind "esc:abort")
+    # Run the search command and pipe to fzf
+    search_cmd="$RG_CMD '$SEARCH_TERM' '$SEARCH_PATH'"
+    echo "Executing: $search_cmd" # Debug line
 
-  # Exit if no selection is made (e.g., if Esc is pressed)
-  if [ -z "$selected" ]; then
-    echo "Exiting."
-    break
-  fi
+    selected=$(eval "$search_cmd" | \
+        fzf --ansi \
+            --preview="$BAT_CMD --style=numbers --color=always --theme='ansi' --highlight-line {2} {1}" \
+            --preview-window=right:50%:wrap \
+            --delimiter=":" \
+            --with-nth=1,2,3 \
+            --bind "enter:accept" \
+            --bind "esc:abort")
 
-  # Extract the file path and line number from the selected item
-  filepath=$(echo "$selected" | cut -d: -f1)
-  linenumber=$(echo "$selected" | cut -d: -f2)
+    # Exit if no selection is made
+    if [[ -z "$selected" ]]; then
+        echo "Exiting."
+        break
+    fi
 
-  # Open the file in vi at the specified line
-  vi +"$linenumber" "$filepath"
+    # Extract the file path and line number
+    filepath=$(echo "$selected" | cut -d: -f1)
+    linenumber=$(echo "$selected" | cut -d: -f2)
+
+    # Open the file in vi at the specified line
+    vi +"$linenumber" "$filepath"
 done
+
 
