@@ -1,11 +1,12 @@
 #!/bin/bash -e
 # shellcheck disable=SC1091
 
-# May 19, 2025
-YQ_RELEASE=v4.45.1
+# Sep 16, 2025
+YQ_RELEASE=v4.47.2
+# Please dont upgrade kind. It have a problem with registry
 KIND_RELEASE=v0.26.0
-GOLANG_RELEASE=1.24.0
-HELM_RELEASE=v3.17.2
+GOLANG_RELEASE=1.25.1
+HELM_RELEASE=v3.19.0
 
 source .pretty_print
 
@@ -384,7 +385,6 @@ rhel_init()
         redis \
         ripgrep \
         screen \
-        shc \
         shellcheck \
         socat \
         strace \
