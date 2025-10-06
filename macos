@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -------- helpers --------
+ts() { date +"%Y%m%d-%H%M%S"; }
+backup_if_exists() {
+  local target="$1"
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    cp -a "$target" "${target}.bak.$(ts)"
+  fi
+}
+
+append_once() {
+  # append a line to a file if it doesn't already exist (as exact match)
+  local file="$1"
+  local line="$2"
+  grep -Fqx "$line" "$file" 2>/dev/null || printf '%s\n' "$line" >> "$file"
+}
+
+# -------- 1) Ensure $HOME/bin --------
+mkdir -p "$HOME/bin"
+
+# -------- 2) Copy dotfiles to $HOME (with backups) --------
+# .zshrc
+if [ -f "./.zshrc" ]; then
+  backup_if_exists "$HOME/.zshrc"
+  cp -a "./.zshrc" "$HOME/.zshrc"
+  echo "Installed ~/.zshrc"
+else
+  echo "Note: ./.zshrc not found; skipping."
+fi
+
+# .my_aliases (support both names)
+if [ -f "./.my_aliases" ]; then
+  backup_if_exists "$HOME/.my_aliases"
+  cp -a "./.my_aliases" "$HOME/.my_aliases"
+  echo "Installed ~/.my_aliases"
+elif [ -f "./.myalias" ]; then
+  backup_if_exists "$HOME/.my_aliases"
+  cp -a "./.myalias" "$HOME/.my_aliases"
+  echo "Installed ~/.my_aliases (from ./.myalias)"
+else
+  echo "Note: neither ./.my_aliases nor ./.myalias found; skipping."
+fi
+
+# .kubectl_aliases
+if [ -f "./.kubectl_aliases" ]; then
+  backup_if_exists "$HOME/.kubectl_aliases"
+  cp -a "./.kubectl_aliases" "$HOME/.kubectl_aliases"
+  echo "Installed ~/.kubectl_aliases"
+else
+  echo "Note: ./.kubectl_aliases not found; skipping."
+fi
+
+# -------- 3) Install / set up Homebrew --------
+if ! command -v brew >/dev/null 2>&1; then
+  echo "Homebrew not found. Installing..."
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+else
+  echo "Homebrew found."
+fi
+
+# Determine brew prefix (Apple Silicon vs Intel)
+BREW_PREFIX="$(/usr/bin/env brew --prefix 2>/dev/null || true)"
+if [ -z "${BREW_PREFIX}" ]; then
+  # Fallbacks
+  if [ -d /opt/homebrew ]; then
+    BREW_PREFIX=/opt/homebrew
+  elif [ -d /usr/local/Homebrew ]; then
+    BREW_PREFIX=/usr/local
+  fi
+fi
+
+# -------- 4) Ensure PATH contains Homebrew and $HOME/bin (idempotent) --------
+# Use ~/.zprofile for login shells & ~/.zshrc for interactive shells.
+touch "$HOME/.zprofile" "$HOME/.zshrc"
+
+if [ -n "${BREW_PREFIX:-}" ]; then
+  # Recommended brew shellenv line
+  BREW_LINE='eval "$('"$BREW_PREFIX"'/bin/brew shellenv)"'
+  append_once "$HOME/.zprofile" "$BREW_LINE"
+  append_once "$HOME/.zshrc"    "$BREW_LINE"
+fi
+
+# Ensure $HOME/bin is early in PATH
+BIN_LINE='export PATH="$HOME/bin:$PATH"'
+append_once "$HOME/.zprofile" "$BIN_LINE"
+append_once "$HOME/.zshrc"    "$BIN_LINE"
+
+# Apply to current session (best effort)
+if [ -n "${BREW_PREFIX:-}" ] && [ -x "$BREW_PREFIX/bin/brew" ]; then
+  eval "$("$BREW_PREFIX/bin/brew" shellenv)"
+fi
+export PATH="$HOME/bin:$PATH"
+
+# -------- 5) Copy all x* to $HOME/bin and make executable --------
+shopt -s nullglob
+copied=0
+for f in x*; do
+  # Only regular files
+  [ -f "$f" ] || continue
+  cp -a "$f" "$HOME/bin/"
+  chmod +x "$HOME/bin/$(basename "$f")"
+  echo "Installed $HOME/bin/$(basename "$f")"
+  copied=$((copied+1))
+done
+shopt -u nullglob
+[ "$copied" -eq 0 ] && echo "Note: no files matching 'x*' found to copy."
+
+echo "Done. Open a new terminal or run:  source ~/.zprofile && source ~/.zshrc"
+
