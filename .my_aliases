@@ -1,0 +1,103 @@
+# ~/.my_aliases — shared aliases & functions (safe on macOS)
+# Guards ensure commands exist; avoids Linux-only flags like `--color=auto`.
+
+# ----- Helpers -----
+_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# ----- ls/ll/l -----
+if _exists ls; then
+  # macOS: use -G (BSD ls). If you install coreutils (gls), you can switch.
+  alias ls='ls -G'
+  alias ll='ls -lah'
+  alias l='pwd; ls -lrtAF'
+fi
+
+# ----- Quick dirs -----
+alias pd='pushd'
+alias ppd='popd'
+
+# ----- Kubernetes shortcuts -----
+if _exists kubectl; then
+  alias kcontext='kubectl config get-contexts || echo "no-kcontext"'
+  alias kscontext='kubectl config use-context || echo "no-kscontext"'
+
+  # exec into pod: k8sh [ns] <pod>
+  k8sh() {
+    local ns=obj
+    local namespace="default"
+    local objname="$1"
+    if [ -n "$2" ]; then namespace="$1"; objname="$2"; fi
+    kubectl -n "$namespace" exec -it "$objname" -- bash 2>/dev/null || \
+    kubectl -n "$namespace" exec -it "$objname" -- sh
+  }
+
+  # Tail logs of pods by label key=value
+  module_log() {
+    local selector="$1"
+    [ -z "$selector" ] && { echo "usage: module_log app.kubernetes.io/name=<value>"; return 1; }
+    until kubectl logs -f -l "$selector"; do sleep 1; done
+  }
+
+fi
+
+# ----- JSON / CSV tooling -----
+if _exists jq; then
+  flatj()  { jq 'paths(scalars) | map(tostring) | join(".")' "$1"; }
+  flatjv() { jq -r 'paths(scalars) as $p | [([ $p[]|tostring ]|join(".")), (getpath($p)|tojson)] | join(" = ")' "$1"; }
+fi
+pretty_csv() { command -v column >/dev/null && column -t -s, -n "$@" | less -F -S -X -K; }
+
+# ----- macOS conveniences -----
+copyKey() { cat ~/.ssh/id_rsa.pub | pbcopy; echo "Public key copied to clipboard."; }
+alias md='mdfind -onlyin .'
+
+# ----- AWS helpers -----
+alias aws_user='aws sts get-caller-identity'
+
+# ----- One-off installers (use with care) -----
+getdocker() { curl -fsSL https://get.docker.com | sudo sh -; }
+
+# ----- Networking -----
+alias tcpdump_http='sudo tcpdump -s0 -i any -vvv -w dump.pcap tcp port 80'
+tunnel() {
+  # usage: tunnel host.example.com
+  sudo ssh -i ~/.ssh/id_rsa -nNT \
+    -L 80:localhost:80 -L 8080:localhost:8080 -L 3306:localhost:3306 -L 6379:localhost:6379 \
+    "root@$1"
+}
+
+# ----- Go env quick-setup -----
+go_setup() {
+  mkdir -p "$HOME/go/src" "$HOME/go/bin" "$HOME/go/pkg" "$HOME/go/src/github.com"
+  export GOPATH="$HOME/go"
+  echo "GOPATH=$GOPATH"
+}
+
+# ----- Safer SSH helpers (pass host/ip as arg) -----
+ssr() { ssh "root@$1"; }
+ssu() { ssh "ubuntu@$1"; }
+
+# ----- macFUSE / SSHFS mounts (with keepalive + reconnect) -----
+# Requires: brew install macfuse sshfs (or equivalent)
+if _exists sshfs; then
+  jnar() {
+    mkdir -p "$HOME/jnar/rapidfort"
+    diskutil unmount "$HOME/jnar/rapidfort" >/dev/null 2>&1
+    sshfs -o reconnect \
+          -o ServerAliveInterval=15 \
+          -o ServerAliveCountMax=3 \
+          -o auto_cache \
+          -o follow_symlinks \
+          root@jnar:/root/rapidfort "$HOME/jnar/rapidfort"
+  }
+  jnar2() {
+    mkdir -p "$HOME/jnar2/rapidfort"
+    diskutil unmount "$HOME/jnar2/rapidfort" >/dev/null 2>&1
+    sshfs -o reconnect \
+          -o ServerAliveInterval=15 \
+          -o ServerAliveCountMax=3 \
+          -o auto_cache \
+          -o follow_symlinks \
+          root@jnar2:/root/rapidfort "$HOME/jnar2/rapidfort"
+  }
+fi
