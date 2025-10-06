@@ -1,0 +1,486 @@
+#!/bin/bash -e
+# shellcheck disable=SC1091
+
+# updated: 10.06.2025
+YQ_RELEASE=v4.47.2
+# Please dont upgrade kind. It have a problem with registry
+KIND_RELEASE=v0.26.0
+GOLANG_RELEASE=1.25.1
+HELM_RELEASE=v3.19.0
+
+source .pretty_print
+
+get_os_str() {
+    local _os
+    _os="$(uname)"
+    echo -n "$(echo "${_os}" | tr '[:upper:]' '[:lower:]')"
+}
+
+get_architecture() {
+    local _arch
+    _arch="$(uname -m)"
+    if [ "${_arch}" = "aarch64" ] || [ "${_arch}" = "arm64" ]; then
+        echo -n "arm64"
+    elif [ "${_arch}" = "amd64" ] || [ "${_arch}" = "x86_64" ]; then
+        echo -n "amd64"
+    else
+        print_bred "ERROR: $(get_os_str): ${_arch} not supported."
+        exit 1
+    fi
+}
+
+get_architecture_alt() {
+    if [ "$(get_architecture)" = "arm64" ]; then
+        echo -n "aarch64"
+    else
+        echo -n "x86_64"
+    fi
+}
+
+run_command() {
+  local subroutine="$1"
+  local full_log=""
+  local exit_status=0
+
+    print_bgreen $subroutine
+  # Use a while loop to capture output line-by-line in real-time
+  "$subroutine" 2>&1 | while IFS= read -r line || [[ -n "$line" ]]; do
+    full_log+="$line"$'\n'
+    # Update the current line with a carriage return to overwrite
+    echo -ne "\r$line"
+  done
+
+  # Capture the exit status of the subroutine
+  exit_status=${PIPESTATUS[0]}
+
+  # Check if the subroutine failed
+  if [[ $exit_status -ne 0 ]]; then
+    echo -e "\n\nError detected! Full log below:\n"
+    echo "$full_log"
+    return $exit_status
+  fi
+
+  # Clear the line after success
+  echo -e "\n$subroutine executed successfully."
+  return 0
+}
+
+# Installation subroutines
+tailscale_install() {
+    curl -fsSL https://tailscale.com/install.sh | sh
+    tailscale --version
+}
+
+crane_install() {
+    local version
+    version=$(curl -s "https://api.github.com/repos/google/go-containerregistry/releases/latest" | jq -r '.tag_name')
+    local os
+    local url
+
+    os=$(uname)
+    url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture)".tar.gz
+    if ! curl --output /dev/null --silent --head --fail -L "${url}"; then
+        url=https://github.com/google/go-containerregistry/releases/download/${version}/go-containerregistry_${os}_"$(get_architecture_alt)".tar.gz
+    fi
+
+    curl -sL "$url" > go-containerregistry.tar.gz
+    tar -xzf go-containerregistry.tar.gz -C /usr/local/bin
+    rm go-containerregistry.tar.gz
+    crane version
+}
+
+docker_install() {
+    rm -f get-docker.sh
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    rm -f get-docker.sh
+    docker --version
+}
+
+aws_install() {
+    rm -rf awscliv2.zip aws
+    URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture)".zip
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://awscli.amazonaws.com/awscli-exe-linux-"$(get_architecture_alt)".zip
+    fi
+    rm -rf awscliv2.zip
+    curl -s -o "awscliv2.zip" "${URL}"
+    unzip awscliv2.zip
+    if command -v aws; then
+        ./aws/install --update
+    else
+        ./aws/install
+    fi
+    rm -rf awscliv2.zip aws
+    aws --version
+}
+
+az_install() {
+    curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+    az --version
+}
+
+gcp_install() {
+    export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+    rm -rf /root/google-cloud-sdk
+    curl -sSL https://sdk.cloud.google.com | bash
+    gcloud --version
+}
+
+go_install() {
+    URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://go.dev/dl/go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture_alt)".tar.gz
+    fi
+    curl -Lo go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
+    rm -rf /usr/local/go && tar -C /usr/local -xzf go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+    rm go${GOLANG_RELEASE}."$(get_os_str)"-"$(get_architecture)".tar.gz
+    /usr/local/go/bin/go version
+}
+
+yq_install() {
+    URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture)"
+    if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
+        URL=https://github.com/mikefarah/yq/releases/download/${YQ_RELEASE}/yq_"$(get_os_str)"_"$(get_architecture_alt)"
+    fi
+
+    curl -s -Lo /usr/local/bin/yq "${URL}"
+    chmod +x /usr/local/bin/yq
+    /usr/local/bin/yq --version
+}
+
+k3s_install() {
+#    curl -sfL https://get.k3s.io | sh -s - --disable traefik
+:
+}
+
+kind_install() {
+    URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture)"
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://kind.sigs.k8s.io/dl/${KIND_RELEASE}/kind-"$(get_os_str)"-"$(get_architecture_alt)"
+    fi
+    curl -s -Lo /usr/local/bin/kind "${URL}"
+    chmod +x /usr/local/bin/kind
+    /usr/local/bin/kind version
+
+}
+
+helm_install() {
+    URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
+    if ! curl --output /dev/null --silent --head --fail -L "$URL"; then
+        URL=https://get.helm.sh/helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture_alt)".tar.gz
+    fi
+    curl -s -Lo helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz "${URL}"
+    tar zxvf helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
+    mv -vf "$(get_os_str)"-"$(get_architecture)"/helm /usr/local/bin
+    rm -rf "$(get_os_str)"-"$(get_architecture)"
+    rm -f helm-${HELM_RELEASE}-"$(get_os_str)"-"$(get_architecture)".tar.gz
+    /usr/local/bin/helm version
+}
+
+kubectl_install() {
+    URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/"$(get_architecture)"/kubectl
+    if ! curl --output /dev/null --silent --head --fail -L "${URL}"; then
+        URL=https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/"$(get_os_str)"/$(get_architecture_alt)/kubectl
+    fi
+    curl -s -Lo /usr/local/bin/kubectl "${URL}"
+    chmod +x /usr/local/bin/kubectl
+    /usr/local/bin/kubectl version || true
+}
+
+websocat_install() {
+    if [[ "$(get_architecture_alt)" == "aarch64" || "$(get_architecture)" == "arm64" ]]; then
+        echo skip installing websocat
+    else
+        local url="https://github.com/vi/websocat/releases/download/v1.13.0/websocat.$(get_architecture)-unknown-$(get_os_str)-musl"
+        if ! curl --output /dev/null --silent --head --fail -L "$url"; then
+            url="https://github.com/vi/websocat/releases/download/v1.13.0/websocat.$(get_architecture_alt)-unknown-$(get_os_str)-musl"
+        fi
+
+        # Download and install
+        curl -sL "$url" -o /usr/local/bin/websocat
+        chmod +x /usr/local/bin/websocat
+        websocat --version
+    fi
+}
+
+# OS-specific initialization for Debian-based systems
+debian_init() {
+    export TZ="/usr/share/zoneinfo/America/Los_Angeles"
+    export LC_ALL="C"
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt install -y \
+        acl \
+        aptitude \
+        apt-transport-https \
+        autoconf \
+        bat \
+        bc \
+        bison \
+        bsdmainutils \
+        build-essential \
+        ca-certificates \
+        calc \
+        cargo \
+        cmake \
+        cmake-data \
+        conntrack \
+        curl \
+        default-libmysqlclient-dev \
+        default-mysql-client \
+        emacs-nox \
+        ethtool \
+        expect \
+        flex \
+        fzf \
+        git \
+        gnupg \
+        inotify-tools \
+        jq \
+        libffi-dev \
+        libssl-dev \
+        libtool \
+        lsb-release \
+        lvm2 \
+        lynx \
+        moreutils \
+        musl-dev \
+        nasm \
+        net-tools \
+        npm \
+        openntpd \
+        parallel \
+        pkg-config \
+        psmisc \
+        procmail \
+        pylint \
+        python3-venv \
+        python3-dev \
+        python3-pip \
+        ripgrep \
+        redis-tools \
+        rsync \
+        screen \
+        shellcheck \
+        socat \
+        strace \
+        sudo \
+        swig \
+        tcpdump \
+        telnet \
+        time \
+        tmux \
+        unzip \
+        units \
+        vim \
+        wget
+}
+
+# OS-specific initialization for RHEL-based systems
+rhel_init() {
+    # Update the system and enable EPEL for additional packages
+    yum update -y
+    yum install -y \
+        epel-release \
+        acl \
+        autoconf \
+        bat \
+        bc \
+        bison \
+        bzip2 \
+        ca-certificates \
+        cargo \
+        cmake \
+        cmake-data \
+        conntrack-tools \
+        curl \
+        device-mapper-persistent-data \
+        emacs-nox \
+        ethtool \
+        flex \
+        gcc \
+        gcc-c++ \
+        git \
+        gnupg2 \
+        inotify-tools \
+        jq \
+        libffi-devel \
+        libtool \
+        lvm2 \
+        make \
+        ncurses-devel \
+        net-tools \
+        npm \
+        openntpd \
+        openssl-devel \
+        parallel \
+        pkgconfig \
+        procmail \
+        python3 \
+        python3-devel \
+        python3-pip \
+        python3-virtualenv \
+        readline-devel \
+        redis \
+        ripgrep \
+        screen \
+        shc \
+        shellcheck \
+        socat \
+        strace \
+        sudo \
+        swig \
+        tcpdump \
+        time \
+        tmux \
+        unzip \
+        vim-enhanced \
+        wget \
+        zlib-devel
+}
+
+init() {
+    local update
+    if [ "$1" = "update" ]; then
+        update=true
+    fi
+
+    if [ "$(get_os_str)" = "linux" ]; then
+        if [ -f /etc/os-release ]; then
+
+            source /etc/os-release
+
+            if [ "$ID" = "debian" ] || [ "$ID" = "ubuntu" ] || [ "$ID" = "devuan" ]; then
+                run_command debian_init
+                if [ "$ID" = "ubuntu" ]; then
+                    systemctl stop snapd || true
+                    systemctl disable snapd || true
+                    snap remove --purge $(snap list | awk 'NR>1 {print $1}') || true
+                    apt purge snapd -y || true
+                    rm -rf /var/cache/snapd
+                    rm -rf /var/snap
+                    rm -rf ~/snap
+                    systemctl stop multipathd || true
+                    systemctl disable multipathd || true
+                    apt purge multipath-tools -y
+                    rm -rf /etc/multipath
+                    rm -f /etc/multipath.conf
+                    update-initramfs -u
+                fi
+            elif [ "$ID" = "rhel" ] || [ "$ID" = "centos" ] || [ "$ID" = "fedora" ]; then
+                run_command rhel_init
+            else
+                print_bred "NotSupported: ${ID} $(get_os_str) $(get_architecture) To Do"
+                exit 1
+            fi
+
+            if [ $update ] || [ -z "$(command -v docker)" ]; then
+                if [ "$ID" = "devuan" ]; then
+                    mkdir -p /etc/apt/keyrings
+                    curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+                    chmod a+r /etc/apt/keyrings/docker.asc
+                    echo "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                    apt update
+                    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+		        else
+                    run_command docker_install
+                fi
+            fi
+
+            if [ $update ] || [ -z "$(command -v crane)" ]; then
+                run_command crane_install
+            fi
+            if [ $update ] || [ -z "$(command -v tailscale)" ]; then
+                :
+                #run_command tailscale_install
+            fi
+            if [ $update ] || [ -z "$(command -v go)" ]; then
+                run_command go_install
+            fi
+            if [ $update ] || [ -z "$(command -v yq)" ]; then
+                run_command yq_install
+            fi
+            if [ $update ] || [ -z "$(command -v kind)" ]; then
+                run_command kind_install
+            fi
+            if [ $update ] || [ -z "$(command -v helm)" ]; then
+                run_command helm_install
+            fi
+            if [ $update ] || [ -z "$(command -v kubectl)" ]; then
+                run_command kubectl_install
+            fi
+            if [ $update ] || [ -z "$(command -v aws)" ]; then
+                run_command aws_install
+            fi
+            if [ $update ] || [ -z "$(command -v az)" ]; then
+                :
+                # run_command az_install
+            fi
+            if [ $update ] || [ -z "$(command -v websocat)" ]; then
+                run_command websocat_install
+            fi
+            if [ $update ] || [ -z "$(command -v k3s_install)" ]; then
+                :
+                #run_command k3s_install
+            fi
+            #if [ $update ] || [ -z "$(command -v gcloud)" ]; then
+            #    run_command gcp_install
+            #fi
+        fi
+    elif [ "$(get_os_str)" = "darwin" ]; then
+        print_bred "MacOSX: To Do"
+        exit 1
+    else
+        print_bred "NotSupported: $(get_os_str) $(get_architecture) To Do"
+        exit 1
+    fi
+
+    ln -svf /root/rapidfort/functional-tests/devops/whereami.sh /usr/local/bin/whereami
+    ln -svf /root/rapidfort/functional-tests/devops/whatsnew.sh /usr/local/bin/whatsnew
+    ln -svf /root/rapidfort/functional-tests/devops/pullall.sh /usr/local/bin/pullall
+    ln -svf /root/rapidfort/functional-tests/devops/rfbuild.sh /usr/local/bin/rfbuild
+    ln -svf /root/rapidfort/functional-tests/devops/registry /usr/local/bin/registry
+
+    ln -svf /root/rapidfort/backend/test/license/eph-lic.sh /usr/local/bin/eph-lic.sh
+    cp rfdev /usr/local/bin/rfdev
+    cp -vf xd* /usr/local/bin
+
+    cp -vf .bashrc ~
+    cp -vf .emacs  ~
+    cp -vf .pretty_print ~
+    cp -vf .pylintrc ~
+    cp -vf .user_data ~
+    cp -vf .bashrc.rfserver ~
+    cp -vf .kubectl_aliases ~
+    cp -vf .profile ~
+    cp -vf .screenrc ~
+    cp -vf .vimrc ~
+    mkdir -p /root/rapidfort
+    cp -vf RF_* /root/rapidfort
+}
+
+# Allow individual updates via command-line argument
+if [ -n "$1" ]; then
+    case "$1" in
+        debian_init) run_command debian_init ;;
+        rhel_init) run_command rhel_init ;;
+        docker) run_command docker_install ;;
+        crane) run_command crane_install ;;
+        tailscale) run_command tailscale_install ;;
+        go) run_command go_install ;;
+        yq)  run_command yq_install ;;
+        kind) run_command kind_install ;;
+        helm) run_command helm_install ;;
+        kubectl) run_command kubectl_install ;;
+        aws) run_command aws_install ;;
+        az) run_command az_install ;;
+        websocat) run_command websocat_install ;;
+        gcp) run_command gcp_install ;;
+        k3s) run_command k3s_install ;;
+        update) init "update" ;;
+        *) echo "Unknown command: $1" ;;
+    esac
+else
+    init
+fi
