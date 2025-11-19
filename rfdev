@@ -1,88 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# rfdev: simple persistent tmux with mouse support
+set -euo pipefail
+SESSION=$(basename "$0")
 
-session_name=$(basename "$0")
+CONF="${HOME}/.config/tmux/${SESSION}.conf"
+mkdir -p "$(dirname "$CONF")"
 
-quit() {
-    if tmux has-session -t "${session_name}" 2>/dev/null; then
-        tmux kill-session -t "${session_name}"
-    else
-        echo no tmux session "${session_name}" found.
-    fi
-}
-
-tmux_select_window() {
-    echo xxx | tee /tmp/tmux-windows.log
-    local windows=$(tmux list-windows -a -F "#S:#I:#W" | sed 's/:/ /g') # List all tmux windows
-    echo "$windows" | tee /tmp/tmux-windows.log
-    local window=$(echo "$windows" | fzf --height=40% --reverse | tee /tmp/fzf-output.log | awk '{print $1 ":" $2}') # Use fzf to select a window
-
-    if [[ -n $window ]]; then
-        tmux select-window -t $window # Switch to the selected window
-    else
-        echo "No window selected or fzf failed" | tee /tmp/fzf-error.log
-    fi
-}
-
-export -f tmux_select_window
-
-config() {
-
-cat<<'CONFIG' > /tmp/"${session_name}".tmux.conf
+# minimal config with working mouse
+cat >"$CONF" <<'CFG'
 set -g mouse on
+set -g default-terminal "tmux-256color"
+set -as terminal-overrides ",*:RGB"
 unbind C-b
-set-option -g prefix C-o
+set -g prefix C-o
 bind-key C-o send-prefix
-bind-key / command-prompt -p 'Search for window:' 'choose-tree -w'
-bind-key z run-shell "tmux list-windows -a -F '#S:#I' | fzf --height=40% --reverse | xargs tmux select-window -t"
-bind ^ split-window -v
-bind-key A command-prompt -I "#W" "rename-window '%%'"
-bind-key o last-pane
-unbind-key \"
-bind-key \" list-windows
 set -g status-interval 10
-set -g status-right "L: #(cut -d ' ' -f 1-3 /proc/loadavg) | #([ -f /root/rapidfort/RF_SAAS ] && echo S || echo O) | %a %h-%d %H:%M"
-CONFIG
+set -g status-right "%a %h-%d %H:%M"
+set -g set-titles on
+set -g set-titles-string "#S:#W"
+CFG
 
-}
-
-create_windows() {
-    local windows=("cli" "platform" "common" "test" "log" "build")
-    local repos=("." "." "." "." "." ".")
-    # windows=("agg" "bac" "com" "doc" "facc" "fupl" "fro" "fun" "iso" "k8s" "pac" "cli" "plat" "rfp" "rfv" "run" "vul")
-    # repos=("aggregator" "backend" "common" "documentation" "file_access" "fileupload" "frontrow" "functional-tests" \
-    #        "iso-master" "k8s-rf-monitor" "package-analyzer" "rapidfort" "rapidfort-platform" "rfpubsub" "rfvdb" "runner" "vulns-db")
-
-    for i in "${!windows[@]}"; do
-        if [ $i = 0 ]; then
-            tmux rename-window -t "${session_name}" "${windows[i]}"
-            tmux send-keys -t "${session_name}" "cd /root/rapidfort/${repos[i]}" C-m
-        else
-            tmux new-window -t "${session_name}" -n "${windows[i]}"
-            tmux send-keys -t "${session_name}":$i "cd /root/rapidfort/${repos[i]}" C-m
-        fi
-    done
-}
-
-start() {
-
-    if tmux has-session -t "${session_name}" 2>/dev/null; then
-        tmux attach-session -t "${session_name}"
-    else
-        config
-        tmux -f /tmp/"${session_name}".tmux.conf new-session -d -s "${session_name}"
-        create_windows
-        tmux attach-session -t "${session_name}"
-    fi
-}
-
-case $1 in
-  quit|q|exit|x)
-    echo "Exiting the "${session_name}" ..."
-    quit
-    exit 0
-    ;;
-  *)
-    start
-    ;;
-esac
-
+# create or attach
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+  exec tmux -f "$CONF" attach -t "$SESSION"
+else
+  tmux -f "$CONF" new-session -d -s "$SESSION" -n cli
+  for w in platform common test log build; do
+    tmux new-window -t "$SESSION" -n "$w"
+  done
+  exec tmux -f "$CONF" attach -t "$SESSION"
+fi
