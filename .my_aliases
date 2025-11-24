@@ -1,0 +1,212 @@
+# ~/.my_aliases — portable aliases & functions for Bash/Zsh on macOS/Linux/WSL
+# No network writes or package installs; everything is feature/OS-gated.
+
+# ----- Guards & OS detection -----
+_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# OS flags (Darwin, Linux, WSL)
+_IS_MAC=0; _IS_LINUX=0; _IS_WSL=0
+case "$(uname -s)" in
+  Darwin) _IS_MAC=1 ;;
+  Linux)
+    _IS_LINUX=1
+    grep -qi microsoft /proc/version 2>/dev/null && _IS_WSL=1
+    ;;
+esac
+
+# Ensure we only load once per shell session
+if [ -n "${_MY_ALIASES_LOADED:-}" ]; then return 0 2>/dev/null || true; fi
+_MY_ALIASES_LOADED=1
+
+# Prefer "command" over aliases inside functions
+_command() { command "$@"; }
+
+# ----- ls / ll / l (BSD vs GNU safe) -----
+# Prefer GNU ls if installed as "gls" (Homebrew coreutils), else system ls.
+_LS_BIN="$(_exists gls && echo gls || echo ls)"
+
+# Detect GNU vs BSD to set color flag
+if $_LS_BIN --version 2>/dev/null | grep -qi 'gnu'; then
+  _LS_COLOR="--color=auto"
+else
+  _LS_COLOR="-G"   # BSD ls
+fi
+
+# Aliases + helpers
+alias ls="$_LS_BIN $_LS_COLOR -F"
+ll() { $_LS_BIN -lah "$@"; }
+l()  { pwd; $_LS_BIN -lrtAF "$@"; }
+
+# ----- Quick dirs -----
+alias pd='pushd'
+alias ppd='popd'
+
+# ----- Kubernetes shortcuts (only if kubectl exists) -----
+if _exists kubectl; then
+  # Context helpers
+  kcontext()  { kubectl config get-contexts "$@"; }
+  kscontext() { kubectl config use-context "$@"; }
+
+  # Exec into a pod. Usage: k8sh [namespace] <pod>
+  k8sh() {
+    local ns pod
+    if [ "$#" -eq 1 ]; then ns=default; pod="$1"; else ns="$1"; pod="$2"; fi
+    [ -z "$pod" ] && { echo "usage: k8sh [namespace] <pod>"; return 1; }
+    kubectl -n "$ns" exec -it "$pod" -- bash -l 2>/dev/null || \
+    kubectl -n "$ns" exec -it "$pod" -- sh
+  }
+
+  # Tail logs by label; optional container name
+  # usage: module_log app.kubernetes.io/name=<value> [container]
+  module_log() {
+    local selector="$1" container="$2"
+    [ -z "$selector" ] && { echo "usage: module_log key[=value] [container]"; return 1; }
+    while true; do
+      if [ -n "$container" ]; then
+        kubectl logs -f -l "$selector" -c "$container"
+      else
+        kubectl logs -f -l "$selector"
+      fi
+      sleep 1
+    done
+  }
+
+  # kube-ps1 (optional): source if present in common paths; do not auto-install
+  _KPS1_CANDIDATES="
+    $HOME/.kube-ps1.sh
+    /usr/local/etc/bash_completion.d/kube-ps1.sh
+    /opt/homebrew/etc/bash_completion.d/kube-ps1.sh
+    /usr/local/share/kube-ps1/kube-ps1.sh
+    /opt/homebrew/share/kube-ps1/kube-ps1.sh
+    /usr/share/kube-ps1/kube-ps1.sh
+  "
+  for _p in $_KPS1_CANDIDATES; do
+    [ -f "$_p" ] && { # shellcheck source=/dev/null
+      . "$_p" && break
+    }
+  done
+  unset _KPS1_CANDIDATES _p
+fi
+
+# ----- JSON / CSV tooling -----
+# flatj / flatjv accept a file or read from stdin if no arg is given
+if _exists jq; then
+  flatj() {
+    if [ -n "$1" ]; then jq 'paths(scalars) | map(tostring) | join(".")' "$1"
+    else jq 'paths(scalars) | map(tostring) | join(".")'
+    fi
+  }
+  flatjv() {
+    if [ -n "$1" ]; then
+      jq -r 'paths(scalars) as $p | [([ $p[]|tostring ]|join(".")), (getpath($p)|tojson)] | join(" = ")' "$1"
+    else
+      jq -r 'paths(scalars) as $p | [([ $p[]|tostring ]|join(".")), (getpath($p)|tojson)] | join(" = ")'
+    fi
+  }
+fi
+
+# Pretty-print CSV using column(1); add -n only if supported (GNU util-linux)
+pretty_csv() {
+  _exists column || { echo "pretty_csv: column(1) not found"; return 1; }
+  local extra=""
+  printf 'a,b\n1,2\n' | column -t -s, -n >/dev/null 2>&1 && extra="-n"
+  column -t -s, $extra "$@" | less -F -S -X
+}
+
+# ----- Clipboard-friendly SSH public key copy (macOS/X11/Wayland/WSL) -----
+copyKey() {
+  local pub="${1:-$HOME/.ssh/id_rsa.pub}"
+  [ -r "$pub" ] || { echo "No readable key at: $pub"; return 1; }
+  if _exists pbcopy; then
+    cat "$pub" | pbcopy && echo "Public key copied to clipboard (pbcopy)."
+  elif _exists wl-copy; then
+    cat "$pub" | wl-copy && echo "Public key copied to clipboard (wl-copy)."
+  elif _exists xclip; then
+    cat "$pub" | xclip -selection clipboard && echo "Public key copied to clipboard (xclip)."
+  elif [ "$_IS_WSL" -eq 1 ] && _exists clip.exe; then
+    cat "$pub" | clip.exe && echo "Public key copied to clipboard (clip.exe)."
+  else
+    echo "No clipboard tool found; printing instead:"
+    cat "$pub"
+  fi
+}
+
+# ----- AWS helpers -----
+if _exists aws; then
+  alias aws_user='aws sts get-caller-identity --output json'
+fi
+
+# ----- Networking -----
+# Interface and output are optional: tcpdump_http [iface] [outfile]
+tcpdump_http() {
+  local iface="${1:-any}" out="${2:-dump.pcap}"
+  _exists tcpdump || { echo "tcpdump not found"; return 1; }
+  sudo tcpdump -s0 -i "$iface" -vvv -w "$out" tcp port 80
+}
+
+# SSH tunnels to common local ports (change as needed)
+# usage: tunnel <host> [user]  (defaults user=root)
+tunnel() {
+  local host="$1" user="${2:-root}"
+  [ -z "$host" ] && { echo "usage: tunnel <host> [user]"; return 1; }
+  sudo ssh -i "$HOME/.ssh/id_rsa" -nNT \
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
+    -L 80:localhost:80 \
+    -L 8080:localhost:8080 \
+    -L 3306:localhost:3306 \
+    -L 6379:localhost:6379 \
+    -L 8123:localhost:8123 \
+    "$user@$host"
+}
+
+# ----- Go env quick-setup -----
+go_setup() {
+  if ! _exists go; then echo "Go is not installed."; return 1; fi
+  export GOPATH="${GOPATH:-$HOME/go}"
+  mkdir -p "$GOPATH"/{src,bin,pkg} "$GOPATH/src/github.com"
+  case ":$PATH:" in
+    *":$GOPATH/bin:"*) : ;;
+    *) export PATH="$GOPATH/bin:$PATH" ;;
+  esac
+  echo "GOPATH=$GOPATH"
+}
+
+# ----- Safer SSH helpers -----
+if _exists ssh; then
+  ss()  { local user="$1" host="$2"; shift 2 || true; ssh "${user}@${host}" "$@"; }
+  ssr() { ss root "$@"; }
+  ssf() { ss rf "$@"; }
+fi
+
+# ----- SSHFS mounts (portable) -----
+if _exists sshfs; then
+  # usage: mount_sshfs user@host /remote/path /local/mountpoint
+  mount_sshfs() {
+    local remote="$1" rpath="$2" ldir="$3"
+    [ -z "$remote" ] || [ -z "$rpath" ] || [ -z "$ldir" ] && {
+      echo "usage: mount_sshfs user@host /remote/path /local/mountpoint"; return 1; }
+    mkdir -p "$ldir"
+    if [ "$_IS_MAC" -eq 1 ]; then
+      diskutil unmount "$ldir" >/dev/null 2>&1
+    fi
+    sshfs -o reconnect \
+          -o ServerAliveInterval=15 \
+          -o ServerAliveCountMax=3 \
+          -o auto_cache \
+          -o follow_symlinks \
+          "${remote}:${rpath}" "$ldir"
+  }
+  # usage: umount_sshfs /local/mountpoint
+  umount_sshfs() {
+    local ldir="$1"
+    [ -z "$ldir" ] && { echo "usage: umount_sshfs /local/mountpoint"; return 1; }
+    if [ "$_IS_MAC" -eq 1 ]; then
+      diskutil unmount "$ldir"
+    else
+      fusermount -u "$ldir" 2>/dev/null || umount "$ldir"
+    fi
+  }
+fi
+
+# ----- Clean up temps -----
+unset _IS_MAC _IS_LINUX _IS_WSL _LS_BIN _LS_COLOR
